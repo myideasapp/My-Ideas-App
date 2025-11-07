@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ideas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.546.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.25.0",
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
+  }
+}
+</script>
+</head>
+<body class="bg-gray-100">
+    <div id="root"></div>
+    <script type="module">
+        import React, { useState, useEffect, useRef, useCallback } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { GoogleGenAI, Type, Modality } from "@google/genai";
+        import { Search, ChevronRight, Edit, Heart, Star, X, Loader, Send, Bot, Volume2, Copy, ThumbsUp, Check, Loader2, Mic, ChevronLeft, Mail, Calendar, FileText, Share2, Phone, Sparkles } from 'lucide-react';
+        import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+        import { initializeApp } from 'firebase/app';
+        import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, query, orderBy, getDocs, where, deleteDoc } from 'firebase/firestore';
+        import { getAuth, onAuthStateChanged, signOut, updateProfile, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+
+        // --- BUNDLED CODE STARTS HERE ---
+        
+        // From: constants.ts
+        const CATEGORIES = ['flutter', 'web', 'android', 'game', 'ios'];
+        const TRANSLATIONS = {
+          en: {
+            home: 'Home',
+            favorites: 'Favorites',
+            add: 'Add',
+            settings: 'Settings',
+            my_prompts: 'My Prompts',
+            approve: 'Approve',
+            reject: 'Reject',
+            copy: 'Copy',
+            admin: 'Admin',
+            back: 'Back',
+            copied: 'Copied!',
+            submit: 'Submit',
+            generate_with_ai: 'Generate with AI',
+            generating: 'Generating...',
+            logout: 'Logout',
+            language: 'Language',
+            user_app: 'User App',
+            admin_panel: 'Admin Panel',
+            search_prompts: 'Search prompts...',
+            all: 'All',
+            view: 'View',
+            submit_prompt: 'Submit Prompt',
+            title: 'Title',
+            short_description: 'Short Description',
+            category: 'Category',
+            icon: 'Icon',
+            prompt_text: 'Prompt Text',
+            no_favorites: "You haven't favorited any prompts yet.",
+            approved_status: 'Approved',
+            pending_status: 'Pending',
+            no_prompts_submitted: "You haven't submitted any prompts yet.",
+            click_add_to_share: "Click the 'Add' button below to share your first prompt!",
+            my_prompts_count: 'My Prompts ({count})',
+            logged_in_as: 'Logged in as',
+            my_profile: 'My Profile',
+            view_your_stats: 'View your stats and account info',
+            rate_this_idea: 'Rate this Idea',
+            your_rating: 'Your rating: {rating}',
+            loading_rating: 'Loading your previous rating...',
+            edit_profile: 'Edit Profile',
+            display_name: 'Display Name',
+            save_changes: 'Save Changes',
+            saving: 'Saving...',
+            welcome_back: 'Welcome Back!',
+            create_account: 'Create Account',
+            sign_in: 'Sign In',
+            sign_up: 'Sign Up',
+            processing: 'Processing...',
+            or: 'OR',
+            sign_in_with_google: 'Sign in with Google',
+            need_account: 'Need an account? Sign Up',
+            have_account: 'Already have an account? Sign In',
+            achievements: 'Achievements',
+            refer_a_friend: 'Refer a Friend',
+            share_referral: 'Share this link with your friends to invite them to the app!',
+            prompts_submitted: 'Prompts Submitted',
+            member_since: 'Member since {date}',
+            ach_first_steps: 'First Steps',
+            ach_first_steps_desc: 'Submit your very first prompt!',
+            ach_contributor: 'Contributor',
+            ach_contributor_desc: 'Submit 5 prompts.',
+            ach_prolific: 'Prolific',
+            ach_prolific_desc: 'Submit 10 or more prompts.',
+            ach_curator: 'Curator',
+            ach_curator_desc: 'Favorite 5 prompts.',
+            ach_super_fan: 'Super Fan',
+            ach_super_fan_desc: 'Favorite 15 or more prompts.',
+            ach_joined: 'Joined!',
+            ach_joined_desc: 'Welcome to the community!',
+            assistant: 'Assistant',
+            ask_anything_dev: 'Ask about app development...',
+            thinking: 'Thinking...',
+            welcome_assistant: 'Hello! How can I help you with app development today?',
+          },
+          hi: {
+            home: 'होम',
+            favorites: 'पसंदीदा',
+            add: 'जोड़ें',
+            settings: 'सेटिंग्स',
+            my_prompts: 'मेरे प्रॉम्प्ट',
+            approve: 'मंजूर',
+            reject: 'अस्वीकार',
+            copy: 'कॉपी',
+            admin: 'एडमिन',
+            back: 'वापस',
+            copied: 'कॉपी किया गया!',
+            submit: 'सबमिट करें',
+            generate_with_ai: 'एआई से उत्पन्न करें',
+            generating: 'उत्पन्न हो रहा है...',
+            logout: 'लॉग आउट',
+            language: 'भाषा',
+            user_app: 'यूज़र ऐप',
+            admin_panel: 'एडमिन पैनल',
+            search_prompts: 'प्रॉम्प्ट खोजें...',
+            all: 'सभी',
+            view: 'देखें',
+            submit_prompt: 'प्रॉम्प्ट सबमिट करें',
+            title: 'शीर्षक',
+            short_description: 'संक्षिप्त विवरण',
+            category: 'श्रेणी',
+            icon: 'आइकन',
+            prompt_text: 'प्रॉम्प्ट टेक्स्ट',
+            no_favorites: 'आपने अभी तक कोई प्रॉम्प्ट पसंदीदा नहीं किया है।',
+            approved_status: 'स्वीकृत',
+            pending_status: 'लंबित',
+            no_prompts_submitted: 'आपने अभी तक कोई प्रॉMPT सबमिट नहीं किया है।',
+            click_add_to_share: "अपना पहला प्रॉम्प्ट साझा करने के लिए नीचे 'जोड़ें' बटन पर क्लिक करें!",
+            my_prompts_count: 'मेरे प्रॉम्प्ट ({count})',
+            logged_in_as: 'इस रूप में लॉग इन हैं',
+            my_profile: 'मेरी प्रोफ़ाइल',
+            view_your_stats: 'अपने आँकड़े और खाते की जानकारी देखें',
+            rate_this_idea: 'इस आइडिया को रेट करें',
+            your_rating: 'आपकी रेटिंग: {rating}',
+            loading_rating: 'आपकी पिछली रेटिंग लोड हो रही है...',
+            edit_profile: 'प्रोफ़ाइल संपादित करें',
+            display_name: 'प्रदर्शित नाम',
+            save_changes: 'बदलाव सहेजें',
+            saving: 'सहेज रहा है...',
+            welcome_back: 'वापसी पर स्वागत है!',
+            create_account: 'खाता बनाएं',
+            sign_in: 'साइन इन करें',
+            sign_up: 'साइन अप करें',
+            processing: 'प्रोसेस हो रहा है...',
+            or: 'या',
+            sign_in_with_google: 'Google से साइन इन करें',
+            need_account: 'खाते की आवश्यकता है? साइन अप करें',
+            have_account: 'पहले से ही एक खाता है? साइन इन करें',
+            achievements: 'उपलब्धियां',
+            refer_a_friend: 'एक दोस्त को रेफर करें',
+            share_referral: 'इस ऐप में अपने दोस्तों को आमंत्रित करने के लिए यह लिंक साझा करें!',
+            prompts_submitted: 'प्रॉम्प्ट सबमिट किए गए',
+            member_since: 'सदस्य जबसे {date}',
+            ach_first_steps: 'पहला कदम',
+            ach_first_steps_desc: 'अपना पहला प्रॉम्प्ट सबमिट करें!',
+            ach_contributor: 'योगदानकर्ता',
+            ach_contributor_desc: '5 प्रॉम्प्ट सबमिट करें।',
+            ach_prolific: 'प्रचुर',
+            ach_prolific_desc: '10 या अधिक प्रॉम्प्ट सबमिट करें।',
+            ach_curator: 'क्यूरेटर',
+            ach_curator_desc: '5 प्रॉम्प्ट पसंदीदा करें।',
+            ach_super_fan: 'सुपर फैन',
+            ach_super_fan_desc: '15 या अधिक प्रॉम्प्ट पसंदीदा करें।',
+            ach_joined: 'शामिल हुए!',
+            ach_joined_desc: 'समुदाय में आपका स्वागत है!',
+            assistant: 'सहायक',
+            ask_anything_dev: 'ऐप डेवलपमेंट के बारे में पूछें...',
+            thinking: 'सोच रहा है...',
+            welcome_assistant: 'नमस्ते! मैं आज ऐप डेवलपमेंट में आपकी कैसे मदद कर सकता हूँ?',
+          }
+        };
+        const ADMIN_UIDS = ['ZVBsDz8tTdXOLoElAofVwBGeRMj1', 'osjVLYCSdvQaa8jZxYPbY7tracH2'];
+        
+        // From: services/firebase.ts
+        const firebaseConfig = {
+          apiKey: "AIzaSyAUnCQFmL0PHhVPOpkUj9YUGc3RHBmWBpg",
+          authDomain: "ideas-a9dea.firebaseapp.com",
+          projectId: "ideas-a9dea",
+          storageBucket: "ideas-a9dea.firebasestorage.app",
+          messagingSenderId: "126723826835",
+          appId: "1:126723826835:web:4c411b5a172a8c4f331966",
+          measurementId: "G-BEJR2TGRWJ"
+        };
+        const appFirebase = initializeApp(firebaseConfig);
+        const db = getFirestore(appFirebase);
+        const auth = getAuth(appFirebase);
+
+        // From: services/geminiService.ts
+        const generatePrompt = async (category) => {
+          const ai = new GoogleGenAI({ apiKey: window.process.env.API_KEY });
+          try {
+            const response = await ai.models.generateContent({
+              model: "gemini-2.5-flash",
+              contents: `Generate a creative and detailed programming prompt for a ${category} project. The prompt should be suitable for an intermediate developer. Provide a title, a short description (desc), and the full prompt text.`,
+              config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING, description: "A short, catchy title for the programming project prompt." },
+                    desc: { type: Type.STRING, description: "A one-sentence description of the project." },
+                    text: { type: Type.STRING, description: "The full, detailed text of the prompt, explaining the project requirements, features, and potential technologies." }
+                  },
+                  required: ["title", "desc", "text"],
+                },
+              },
+            });
+            const jsonString = response.text.trim();
+            const generatedData = JSON.parse(jsonString);
+            return { title: generatedData.title, desc: generatedData.desc, text: generatedData.text };
+          } catch (error) {
+            console.error("Error generating prompt with Gemini:", error);
+            throw new Error("Failed to generate prompt. Please try again.");
+          }
+        };
+
+        // --- COMPONENTS ---
+
+        // From: components/common/BottomNav.tsx
+        const NavItem = ({ icon, label, isActive, onClick }) => (
+          React.createElement('button', {
+            onClick, 
+            className: `flex flex-col items-center justify-center text-xs font-bold transition-colors duration-200 flex-1 min-w-0 py-1 ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-blue-500'}`
+          },
+            React.createElement('span', { className: `text-2xl transition-transform duration-200 mb-0.5 ${isActive ? 'scale-110' : ''}` }, icon),
+            React.createElement('span', { className: "leading-tight truncate" }, label)
+          )
+        );
+        const BottomNav = ({ screen, setScreen, t }) => {
+          const navItems = [
+            { id: 'home', icon: '🏠', label: t.home },
+            { id: 'fav', icon: '❤️', label: t.favorites },
+            { id: 'add', icon: '➕', label: t.add },
+            { id: 'assistant', icon: '🤖', label: t.assistant },
+            { id: 'myPrompts', icon: '👤', label: t.my_prompts },
+            { id: 'settings', icon: '⚙️', label: t.settings },
+          ];
+          return React.createElement('div', { className: "fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t shadow-lg z-50" },
+            React.createElement('div', { className: "max-w-6xl mx-auto flex justify-around" },
+              navItems.map(item => React.createElement(NavItem, { 
+                key: item.id,
+                icon: item.icon,
+                label: item.label,
+                isActive: screen === item.id,
+                onClick: () => setScreen(item.id)
+              }))
+            )
+          );
+        };
+        
+        // From: components/common/PromptCard.tsx
+        const StarDisplay = ({ rating }) => {
+          const roundedRating = Math.round(rating);
+          return React.createElement('div', { className: "flex items-center gap-0.5" },
+            [...Array(5)].map((_, i) => React.createElement(Star, { 
+              key: i, 
+              size: 14, 
+              className: i < roundedRating ? "text-yellow-400 fill-yellow-400" : "text-gray-300" 
+            })),
+            React.createElement('span', { className: "text-xs font-bold text-gray-600 ml-1" }, rating.toFixed(1))
+          );
+        };
+        
+        const PromptCard = ({ prompt, isFavorite, onToggleFavorite, onView, onRateClick, t }) => {
+          const [copied, setCopied] = useState(false);
+          const handleCopy = (e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(prompt.text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          };
+          return React.createElement('div', { className: "bg-white rounded-xl shadow-md p-4 flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300" },
+            React.createElement('div', { className: "text-4xl mb-2" }, prompt.image),
+            React.createElement('h3', { className: "font-bold text-md mb-1 truncate" }, prompt.title),
+            React.createElement('p', { className: "text-xs text-gray-600 mb-3 flex-grow" }, prompt.desc),
+            React.createElement('div', { className: "flex justify-between items-center mb-3" },
+              React.createElement('button', { onClick: () => onRateClick(prompt), className: "p-1 rounded-full hover:bg-yellow-50" }, React.createElement(StarDisplay, { rating: prompt.rating })),
+              React.createElement('button', { onClick: () => onToggleFavorite(prompt.id), className: "p-1 rounded-full hover:bg-red-100 active:scale-90 transition-transform duration-150" }, React.createElement(Heart, { size: 16, className: `transition-all duration-300 transform ${isFavorite ? 'text-red-500 fill-red-500 scale-110' : 'text-gray-400'}` }))
+            ),
+            React.createElement('div', { className: "flex gap-2" },
+              React.createElement('button', { onClick: handleCopy, className: "flex-1 bg-blue-500 text-white text-xs py-2 rounded-lg font-bold hover:bg-blue-600 transition-colors" }, copied ? t.copied : t.copy),
+              React.createElement('button', { onClick: () => onView(`detail-${prompt.id}`), className: "flex-1 bg-purple-500 text-white text-xs py-2 rounded-lg font-bold hover:bg-purple-600 transition-colors" }, 'View')
+            )
+          );
+        };
+        
+        // From: components/user/UserLoginScreen.tsx
+        const GoogleIcon = () => React.createElement('svg', { className: "w-5 h-5", viewBox: "0 0 48 48" },
+            React.createElement('path', { fill: "#4285F4", d: "M24 9.5c3.9 0 6.9 1.6 9.1 3.7l6.9-6.9C35.9 2.5 30.5 0 24 0 14.9 0 7.3 5.4 3 13.5l8.1 6.3C12.9 13.2 18.1 9.5 24 9.5z" }),
+            React.createElement('path', { fill: "#34A853", d: "M46.2 25.4c0-1.7-.2-3.4-.5-5H24v9.5h12.5c-.5 3.1-2.2 5.7-4.8 7.5l7.3 5.7c4.3-4 6.7-9.9 6.7-16.7z" }),
+            React.createElement('path', { fill: "#FBBC05", d: "M11.1 28.1c-.5-1.5-.8-3.1-.8-4.8s.3-3.3.8-4.8L3 13.5C1.1 17.1 0 21.4 0 26.2s1.1 9.1 3 12.7l8.1-6.3z" }),
+            React.createElement('path', { fill: "#EA4335", d: "M24 48c6.5 0 12-2.1 16-5.6l-7.3-5.7c-2.1 1.4-4.8 2.3-7.7 2.3-5.9 0-11.1-3.7-12.9-8.8l-8.1 6.3C7.3 42.6 14.9 48 24 48z" }),
+            React.createElement('path', { fill: "none", d: "M0 0h48v48H0z" })
+        );
+        const UserLoginScreen = () => {
+          const [isLogin, setIsLogin] = useState(true);
+          const [email, setEmail] = useState('');
+          const [password, setPassword] = useState('');
+          const [error, setError] = useState(null);
+          const [loading, setLoading] = useState(false);
+          const handleSubmit = async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            setError(null);
+            try {
+              if (isLogin) { await signInWithEmailAndPassword(auth, email, password); } 
+              else { await createUserWithEmailAndPassword(auth, email, password); }
+            } catch (err) {
+              let message = 'An unknown error occurred.';
+              if (err.code === 'auth/weak-password') { message = 'Password should be at least 6 characters.'; } 
+              else if (err.code === 'auth/email-already-in-use') { message = 'This email is already registered. Please login.'; } 
+              else if (err.code === 'auth/invalid-credential') { message = 'Invalid email or password.'; } 
+              else { message = 'Failed to authenticate. Please try again.'; }
+              setError(message);
+            } finally { setLoading(false); }
+          };
+          const handleGoogleSignIn = async () => {
+            setLoading(true);
+            setError(null);
+            const provider = new GoogleAuthProvider();
+            try { await signInWithPopup(auth, provider); } 
+            catch (err) {
+              console.error("Google Sign-In Error:", err);
+              let message = 'Failed to sign in with Google. Please try again.';
+              switch (err.code) {
+                  case 'auth/popup-closed-by-user': case 'auth/cancelled-popup-request': return;
+                  case 'auth/popup-blocked': message = 'Popup blocked by browser. Please enable popups and try again.'; break;
+                  case 'auth/operation-not-allowed': message = 'Google Sign-In is not enabled. Please check Firebase settings.'; break;
+                  case 'auth/unauthorized-domain': message = 'This domain is not authorized for Google Sign-In.'; break;
+                  case 'auth/account-exists-with-different-credential': message = 'An account already exists with this email using a different sign-in method.'; break;
+              }
+              setError(message);
+            } finally { setLoading(false); }
+          };
+          return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4" },
+            React.createElement('div', { className: "w-full max-w-sm" },
+              React.createElement('h1', { className: "text-4xl font-bold text-center mb-6 text-blue-600" }, "💡 Ideas"),
+              React.createElement('form', { onSubmit: handleSubmit, className: "bg-white shadow-2xl rounded-2xl px-8 pt-6 pb-8 mb-4" },
+                React.createElement('h2', { className: "text-2xl font-bold text-center mb-4 text-gray-800" }, isLogin ? 'Welcome Back!' : 'Create Account'),
+                React.createElement('div', { className: "mb-4" },
+                  React.createElement('label', { className: "block text-gray-700 text-sm font-bold mb-2", htmlFor: "email" }, "Email"),
+                  React.createElement('input', { className: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500", id: "email", type: "email", placeholder: "you@example.com", value: email, onChange: (e) => setEmail(e.target.value), required: true })
+                ),
+                React.createElement('div', { className: "mb-6" },
+                  React.createElement('label', { className: "block text-gray-700 text-sm font-bold mb-2", htmlFor: "password" }, "Password"),
+                  React.createElement('input', { className: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500", id: "password", type: "password", placeholder: "••••••••••", value: password, onChange: (e) => setPassword(e.target.value), required: true })
+                ),
+                error && React.createElement('p', { className: "text-red-500 text-xs italic mb-4" }, error),
+                React.createElement('div', { className: "flex flex-col gap-4" },
+                  React.createElement('button', { className: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline w-full transition disabled:opacity-50", type: "submit", disabled: loading }, loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')),
+                  React.createElement('div', { className: "relative flex items-center" },
+                    React.createElement('div', { className: "flex-grow border-t border-gray-300" }),
+                    React.createElement('span', { className: "flex-shrink mx-4 text-gray-400 text-xs" }, "OR"),
+                    React.createElement('div', { className: "flex-grow border-t border-gray-300" })
+                  ),
+                  React.createElement('button', { type: "button", onClick: handleGoogleSignIn, disabled: loading, className: "w-full bg-white hover:bg-gray-100 text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg shadow-sm flex items-center justify-center gap-2 transition disabled:opacity-50" }, React.createElement(GoogleIcon), "Sign in with Google"),
+                  React.createElement('button', { type: "button", onClick: () => setIsLogin(!isLogin), className: "text-center text-sm text-blue-600 hover:underline" }, isLogin ? 'Need an account? Sign Up' : 'Already have an account? Sign In')
+                )
+              )
+            )
+          );
+        };
+        
+        // From: components/user/HomeScreen.tsx
+        const HomeScreen = ({ prompts, setScreen, favorites, onToggleFavorite, onRateClick, t }) => {
+          const [search, setSearch] = useState('');
+          const [category, setCategory] = useState('');
+          const filtered = prompts.filter(p => (!category || p.category === category) && (p.title.toLowerCase().includes(search.toLowerCase()) || p.desc.toLowerCase().includes(search.toLowerCase())));
+          return React.createElement('div', { className: "max-w-6xl mx-auto px-4 py-4" },
+            React.createElement('div', { className: "mb-4 relative" },
+              React.createElement(Search, { className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400", size: 20 }),
+              React.createElement('input', { type: "text", placeholder: "Search prompts...", value: search, onChange: (e) => setSearch(e.target.value), className: "w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" })
+            ),
+            React.createElement('div', { className: "flex gap-2 mb-4 overflow-x-auto pb-2 -mx-4 px-4" },
+              React.createElement('button', { onClick: () => setCategory(''), className: `px-4 py-2 rounded-full font-bold whitespace-nowrap text-sm transition-colors ${!category ? 'bg-blue-600 text-white shadow' : 'bg-white hover:bg-gray-200'}` }, "All"),
+              CATEGORIES.map(c => React.createElement('button', { key: c, onClick: () => setCategory(category === c ? '' : c), className: `px-4 py-2 rounded-full font-bold whitespace-nowrap text-sm transition-colors ${category === c ? 'bg-blue-600 text-white shadow' : 'bg-white hover:bg-gray-200'}` }, c.charAt(0).toUpperCase() + c.slice(1)))
+            ),
+            React.createElement('div', { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" },
+              filtered.map(p => React.createElement(PromptCard, { key: p.id, prompt: p, isFavorite: favorites.includes(p.id), onToggleFavorite: onToggleFavorite, onView: setScreen, onRateClick: onRateClick, t: t }))
+            )
+          );
+        };
+        
+        // From: components/user/FavoritesScreen.tsx
+        const FavoritesScreen = ({ favPrompts, setScreen, favorites, onToggleFavorite, onRateClick, t }) => {
+            return React.createElement('div', null,
+                React.createElement('div', { className: "bg-white shadow-md p-4" },
+                    React.createElement('h1', { className: "text-2xl font-bold text-red-500" }, `❤️ ${t.favorites}`)
+                ),
+                React.createElement('div', { className: "max-w-6xl mx-auto px-4 py-4" },
+                    favPrompts.length === 0 ? React.createElement('div', { className: "text-center py-16" },
+                        React.createElement('p', { className: "text-5xl mb-4" }, '💔'),
+                        React.createElement('p', { className: "text-gray-600" }, t.no_favorites)
+                    ) : React.createElement('div', { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" },
+                        favPrompts.map(p => React.createElement(PromptCard, { key: p.id, prompt: p, isFavorite: favorites.includes(p.id), onToggleFavorite: onToggleFavorite, onView: setScreen, onRateClick: onRateClick, t: t }))
+                    )
+                )
+            );
+        };
+
+        // From: components/user/AddPromptScreen.tsx
+        const AddPromptScreen = ({ onAddPrompt, t }) => {
+            const [title, setTitle] = useState('');
+            const [desc, setDesc] = useState('');
+            const [category, setCategory] = useState(CATEGORIES[0]);
+            const [text, setText] = useState('');
+            const [image, setImage] = useState('💡');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!title || !desc || !category || !text) {
+                    alert('Please fill all fields');
+                    return;
+                }
+                onAddPrompt({ title, desc, category, text, image });
+            };
+
+            return React.createElement('div', null,
+                React.createElement('div', { className: "bg-white shadow-md p-4" },
+                    React.createElement('h1', { className: "text-2xl font-bold text-green-500" }, '➕ Submit Prompt')
+                ),
+                React.createElement('div', { className: "max-w-2xl mx-auto px-4 py-4" },
+                    React.createElement('form', { onSubmit: handleSubmit, className: "bg-white rounded-lg shadow-lg p-6 space-y-4" },
+                        React.createElement('div', null,
+                            React.createElement('label', { htmlFor: "title", className: "font-semibold text-sm text-gray-700" }, "Title"),
+                            React.createElement('input', { id: "title", type: "text", placeholder: "e.g., React Weather App", value: title, onChange: e => setTitle(e.target.value), className: "w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", required: true })
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { htmlFor: "desc", className: "font-semibold text-sm text-gray-700" }, "Short Description"),
+                            React.createElement('textarea', { id: "desc", placeholder: "e.g., A simple app to display weather.", value: desc, onChange: e => setDesc(e.target.value), className: "w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", rows: 2, required: true })
+                        ),
+                        React.createElement('div', { className: "flex gap-4" },
+                            React.createElement('div', { className: "flex-grow" },
+                                React.createElement('label', { htmlFor: "category", className: "font-semibold text-sm text-gray-700" }, "Category"),
+                                React.createElement('select', { id: "category", value: category, onChange: e => setCategory(e.target.value), className: "w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", required: true },
+                                    CATEGORIES.map(c => React.createElement('option', { key: c, value: c }, c.charAt(0).toUpperCase() + c.slice(1)))
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { htmlFor: "image", className: "font-semibold text-sm text-gray-700" }, "Icon"),
+                                React.createElement('input', { id: "image", type: "text", value: image, onChange: e => setImage(e.target.value), className: "w-20 text-center mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", maxLength: 2 })
+                            )
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('div', { className: "flex justify-between items-center mb-1" },
+                                React.createElement('label', { htmlFor: "text", className: "font-semibold text-sm text-gray-700" }, "Prompt Text")
+                            ),
+                            React.createElement('textarea', { id: "text", placeholder: "The full text of your prompt...", value: text, onChange: e => setText(e.target.value), className: "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", rows: 6, required: true })
+                        ),
+                        React.createElement('button', { type: "submit", className: "w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition-colors disabled:bg-gray-400" }, t.submit)
+                    )
+                )
+            );
+        };
+        
+        // From: components/user/MyPromptsScreen.tsx
+        const MyPromptCard = ({ prompt, onEdit }) => (
+            React.createElement('div', { className: "bg-white rounded-lg shadow-md p-4 flex items-start gap-4 border-l-4 border-blue-500" },
+                React.createElement('div', { className: "text-4xl mt-1" }, prompt.image),
+                React.createElement('div', { className: "flex-1" },
+                    React.createElement('div', { className: "flex justify-between items-start" },
+                        React.createElement('h3', { className: "font-bold text-lg" }, prompt.title),
+                        React.createElement('button', {
+                            onClick: () => onEdit(prompt.id),
+                            className: "text-gray-500 p-2 rounded-full hover:bg-gray-200 hover:text-gray-800 transition-colors flex-shrink-0",
+                            'aria-label': "Edit prompt"
+                        }, React.createElement(Edit, { size: 18 }))
+                    ),
+                    React.createElement('p', { className: "text-sm text-gray-600 mt-1" }, prompt.desc)
+                )
+            )
+        );
+
+        const MyPromptsScreen = ({ myPrompts, t, setScreen }) => {
+            return React.createElement('div', null,
+                React.createElement('div', { className: "bg-white shadow-md p-4" },
+                    React.createElement('h1', { className: "text-2xl font-bold text-blue-600" }, `👤 ${t.my_prompts} (${myPrompts.length})`)
+                ),
+                React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-4" },
+                    myPrompts.length === 0 ? React.createElement('div', { className: "text-center py-16" },
+                        React.createElement('p', { className: "text-5xl mb-4" }, '✍️'),
+                        React.createElement('p', { className: "text-gray-600" }, t.no_prompts_submitted),
+                        React.createElement('p', { className: "text-sm text-gray-500 mt-2" }, t.click_add_to_share)
+                    ) : React.createElement('div', { className: "space-y-4" },
+                        myPrompts.map(p => React.createElement(MyPromptCard, { key: p.id, prompt: p, onEdit: (id) => setScreen(`edit-${id}`) }))
+                    )
+                )
+            );
+        };
+
+        // From: components/user/SettingsScreen.tsx
+        const SettingsScreen = ({ user, handleLogout, lang, setLang, setScreen, t }) => {
+            return React.createElement('div', null,
+                React.createElement('div', { className: "bg-white shadow-md p-4" },
+                    React.createElement('h1', { className: "text-2xl font-bold" }, `⚙️ ${t.settings}`)
+                ),
+                React.createElement('div', { className: "max-w-2xl mx-auto px-4 py-4" },
+                    React.createElement('div', { className: "bg-white rounded-lg shadow-lg p-6 space-y-4" },
+                        React.createElement('div', { className: "pb-4 border-b" },
+                            React.createElement('p', { className: "text-sm text-gray-500" }, "Logged in as"),
+                            React.createElement('p', { className: "font-semibold text-gray-800 break-words" }, user.email)
+                        ),
+                        React.createElement('button', { onClick: () => setScreen('profile'), className: "w-full text-left bg-gray-50 hover:bg-gray-100 p-4 rounded-lg flex justify-between items-center transition" },
+                            React.createElement('div', null,
+                                React.createElement('p', { className: "font-bold text-gray-800" }, "My Profile"),
+                                React.createElement('p', { className: "text-sm text-gray-500" }, "View your stats and account info")
+                            ),
+                            React.createElement(ChevronRight, { size: 20, className: "text-gray-400" })
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "font-bold text-gray-700" }, t.language),
+                            React.createElement('select', {
+                                value: lang,
+                                onChange: (e) => setLang(e.target.value),
+                                className: "w-full px-4 py-2 border rounded-lg mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            },
+                                React.createElement('option', { value: "en" }, "English"),
+                                React.createElement('option', { value: "hi" }, "हिंदी")
+                            )
+                        ),
+                        React.createElement('button', {
+                            onClick: handleLogout,
+                            className: "w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition"
+                        }, t.logout)
+                    )
+                )
+            );
+        };
+
+        // From: components/user/DetailScreen.tsx
+        const DetailScreen = ({ prompt, setScreen, t, onRatePrompt }) => {
+            const [copied, setCopied] = useState(false);
+            const [userRating, setUserRating] = useState(0);
+            const [loadingRating, setLoadingRating] = useState(true);
+
+            useEffect(() => {
+                const fetchUserRating = async () => {
+                    const currentUser = auth.currentUser;
+                    if (!currentUser) { setLoadingRating(false); return; }
+                    try {
+                        const ratingDocRef = doc(db, 'prompts', prompt.id, 'ratings', currentUser.uid);
+                        const docSnap = await getDoc(ratingDocRef);
+                        if (docSnap.exists()) { setUserRating(docSnap.data().rating); }
+                    } catch (error) { console.error("Error fetching user rating:", error); } 
+                    finally { setLoadingRating(false); }
+                };
+                fetchUserRating();
+            }, [prompt.id]);
+
+            const handleCopy = () => {
+                navigator.clipboard.writeText(prompt.text);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            const StarRating = ({ rating, onRatingChange }) => {
+                const [hoverRating, setHoverRating] = useState(0);
+                return React.createElement('div', null,
+                    React.createElement('div', { className: "flex items-center gap-1" },
+                        [1, 2, 3, 4, 5].map((star) => React.createElement('button', { key: star, onMouseEnter: () => setHoverRating(star), onMouseLeave: () => setHoverRating(0), onClick: () => onRatingChange(star), 'aria-label': `Rate ${star} stars` },
+                            React.createElement(Star, { size: 32, className: `cursor-pointer transition-colors ${(hoverRating || rating) >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}` })
+                        ))
+                    ),
+                    rating > 0 && React.createElement('p', { className: "text-sm text-gray-600 mt-2" }, `Your rating: ${rating} star${rating > 1 ? 's' : ''}`)
+                );
+            };
+
+            return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-4" },
+                React.createElement('button', { onClick: () => setScreen('home'), className: "mb-4 px-4 py-2 bg-gray-600 text-white rounded-lg font-bold hover:bg-gray-700 transition" }, `← ${t.back}`),
+                React.createElement('div', { className: "bg-white rounded-lg shadow-lg p-6" },
+                    React.createElement('div', { className: "text-6xl mb-4" }, prompt.image),
+                    React.createElement('h1', { className: "text-2xl font-bold mb-2" }, prompt.title),
+                    React.createElement('p', { className: "text-gray-600 mb-4" }, prompt.desc),
+                    React.createElement('div', { className: "p-4 bg-gray-100 rounded-lg mb-4 text-sm whitespace-pre-wrap font-mono" }, prompt.text),
+                    React.createElement('div', { className: "mb-4 text-sm text-gray-700 space-y-1" },
+                        React.createElement('p', null, React.createElement('strong', null, "Rating:"), React.createElement('span', { className: "font-semibold bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full" }, `⭐ ${prompt.rating}`)),
+                        React.createElement('p', null, React.createElement('strong', null, "By:"), React.createElement('span', { className: "font-semibold" }, prompt.author))
+                    ),
+                    React.createElement('button', { onClick: handleCopy, className: "w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition mb-6" }, copied ? `✓ ${t.copied}` : t.copy),
+                    React.createElement('div', { className: "pt-6 border-t" },
+                        React.createElement('h3', { className: "font-bold text-lg mb-2" }, "Rate this prompt"),
+                        auth.currentUser ? (
+                            loadingRating ? React.createElement('p', { className: "text-sm text-gray-500" }, "Loading your rating...") :
+                            React.createElement(StarRating, { rating: userRating, onRatingChange: (newRating) => { setUserRating(newRating); onRatePrompt(prompt.id, newRating); } })
+                        ) : React.createElement('p', { className: "text-sm text-gray-500" }, "You must be logged in to rate prompts.")
+                    )
+                )
+            );
+        };
+        
+        // From: components/user/AchievementBadge.tsx
+        const AchievementBadge = ({ icon, name, description, unlocked }) => {
+            return React.createElement('div', { className: `relative group flex flex-col items-center text-center p-2 transition-all duration-300 ${unlocked ? 'opacity-100' : 'opacity-30 grayscale'}` },
+                React.createElement('div', { className: `w-16 h-16 rounded-full flex items-center justify-center text-3xl mb-2 transition-all duration-300 ${unlocked ? 'bg-gradient-to-br from-yellow-300 to-orange-400 shadow-lg' : 'bg-gray-200'}` }, icon),
+                React.createElement('p', { className: "text-xs font-bold text-gray-700" }, name),
+                React.createElement('div', { className: "absolute bottom-full mb-2 w-48 bg-gray-800 text-white text-xs rounded py-1 px-2 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" },
+                    description,
+                    React.createElement('svg', { className: "absolute text-gray-800 h-2 w-full left-0 top-full", x: "0px", y: "0px", viewBox: "0 0 255 255" },
+                        React.createElement('polygon', { className: "fill-current", points: "0,0 127.5,127.5 255,0" })
+                    )
+                )
+            );
+        };
+
+        // From: components/user/UserProfileScreen.tsx
+        const StatCard = ({ icon, label, value }) => (
+            React.createElement('div', { className: "bg-gray-100/50 rounded-lg p-4 flex items-center gap-4" },
+                React.createElement('div', { className: "bg-blue-100 text-blue-600 p-3 rounded-full" }, icon),
+                React.createElement('div', null,
+                    React.createElement('p', { className: "text-2xl font-bold text-gray-800" }, value),
+                    React.createElement('p', { className: "text-sm text-gray-500" }, label)
+                )
+            )
+        );
+
+        const UserProfileScreen = ({ user, myPromptsCount, favoritesCount, setScreen, onEditProfileClick, t }) => {
+            const [copied, setCopied] = useState(false);
+            const creationDate = user.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+            const referralLink = `${window.location.origin}${window.location.pathname}?ref=${user.uid}`;
+            const handleCopy = () => {
+                navigator.clipboard.writeText(referralLink);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+            const displayName = user.displayName || user.email;
+            const achievements = [
+                { icon: '🌱', name: t.ach_first_steps, description: t.ach_first_steps_desc, unlocked: myPromptsCount >= 1 },
+                { icon: '✍️', name: t.ach_contributor, description: t.ach_contributor_desc, unlocked: myPromptsCount >= 5 },
+                { icon: '🚀', name: t.ach_prolific, description: t.ach_prolific_desc, unlocked: myPromptsCount >= 10 },
+                { icon: '❤️', name: t.ach_curator, description: t.ach_curator_desc, unlocked: favoritesCount >= 5 },
+                { icon: '😍', name: t.ach_super_fan, description: t.ach_super_fan_desc, unlocked: favoritesCount >= 15 },
+                { icon: '👋', name: t.ach_joined, description: t.ach_joined_desc, unlocked: true },
+            ];
+
+            return React.createElement('div', null,
+                React.createElement('div', { className: "bg-white shadow-md p-4 flex items-center gap-4" },
+                    React.createElement('button', { onClick: () => setScreen('settings'), className: "text-gray-600 hover:text-blue-600" }, React.createElement(ChevronLeft, { size: 24 })),
+                    React.createElement('h1', { className: "text-2xl font-bold text-blue-600" }, t.my_profile)
+                ),
+                React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-6" },
+                    React.createElement('div', { className: "bg-white rounded-xl shadow-lg p-6 mb-6" },
+                        React.createElement('div', { className: "flex items-start gap-6" },
+                            React.createElement('div', { className: "w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-4xl font-bold flex-shrink-0" }, displayName ? displayName.charAt(0).toUpperCase() : '?'),
+                            React.createElement('div', { className: "flex-1 min-w-0" },
+                                React.createElement('div', { className: "flex items-center justify-between" },
+                                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 break-words truncate" }, displayName),
+                                    React.createElement('button', { onClick: onEditProfileClick, className: "ml-4 flex-shrink-0 bg-gray-200 text-gray-700 p-2 rounded-full hover:bg-gray-300 transition-colors" }, React.createElement(Edit, { size: 16 }))
+                                ),
+                                React.createElement('div', { className: "flex items-center gap-2 text-gray-500 mt-2" },
+                                    React.createElement(Mail, { size: 16 }),
+                                    React.createElement('span', { className: "text-sm truncate" }, user.email)
+                                ),
+                                React.createElement('div', { className: "flex items-center gap-2 text-gray-500 mt-1" },
+                                    React.createElement(Calendar, { size: 16 }),
+                                    React.createElement('span', { className: "text-sm" }, t.member_since.replace('{date}', creationDate))
+                                )
+                            )
+                        )
+                    ),
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
+                        React.createElement(StatCard, { icon: React.createElement(FileText, { size: 24 }), label: t.prompts_submitted, value: myPromptsCount }),
+                        React.createElement(StatCard, { icon: React.createElement(Heart, { size: 24 }), label: t.favorites, value: favoritesCount })
+                    ),
+                    React.createElement('div', { className: "bg-white rounded-xl shadow-lg p-6 mb-6" },
+                        React.createElement('h3', { className: "text-lg font-bold text-gray-800 mb-4" }, `🏆 ${t.achievements}`),
+                        React.createElement('div', { className: "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2" },
+                            achievements.map(ach => React.createElement(AchievementBadge, { key: ach.name, ...ach }))
+                        )
+                    ),
+                    React.createElement('div', { className: "bg-white rounded-xl shadow-lg p-6" },
+                        React.createElement('div', { className: "flex items-center gap-2 mb-4" },
+                            React.createElement(Share2, { className: "text-purple-600", size: 20 }),
+                            React.createElement('h3', { className: "text-lg font-bold text-gray-800" }, t.refer_a_friend)
+                        ),
+                        React.createElement('p', { className: "text-sm text-gray-600 mb-3" }, t.share_referral),
+                        React.createElement('div', { className: "flex gap-2 items-center bg-gray-100 rounded-lg p-2" },
+                            React.createElement('input', { type: "text", readOnly: true, value: referralLink, className: "bg-transparent w-full text-sm text-gray-700 outline-none" }),
+                            React.createElement('button', { onClick: handleCopy, className: `px-4 py-2 rounded-md font-semibold text-sm transition-colors flex items-center gap-1.5 ${copied ? 'bg-green-600 text-white' : 'bg-purple-600 text-white hover:bg-purple-700'}` },
+                                React.createElement(Copy, { size: 14 }),
+                                copied ? t.copied : t.copy
+                            )
+                        )
+                    )
+                )
+            );
+        };
+        
+        // From: components/user/EditPromptScreen.tsx
+        const EditPromptScreen = ({ prompt, onUpdatePrompt, t, setScreen }) => {
+            const [title, setTitle] = useState(prompt.title);
+            const [desc, setDesc] = useState(prompt.desc);
+            const [category, setCategory] = useState(prompt.category);
+            const [text, setText] = useState(prompt.text);
+            const [image, setImage] = useState(prompt.image);
+            const [isUpdating, setIsUpdating] = useState(false);
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!title || !desc || !category || !text) { alert('Please fill all fields'); return; }
+                setIsUpdating(true);
+                onUpdatePrompt(prompt.id, { title, desc, category, text, image });
+            };
+            return React.createElement('div', null,
+                React.createElement('div', { className: "bg-white shadow-md p-4 flex items-center gap-4" },
+                    React.createElement('button', { onClick: () => setScreen('myPrompts'), className: "text-gray-600 hover:text-blue-600" }, React.createElement(ChevronLeft, { size: 24 })),
+                    React.createElement('h1', { className: "text-2xl font-bold text-blue-600" }, "Edit Prompt")
+                ),
+                React.createElement('div', { className: "max-w-2xl mx-auto px-4 py-4" },
+                    React.createElement('form', { onSubmit: handleSubmit, className: "bg-white rounded-lg shadow-lg p-6 space-y-4" },
+                        React.createElement('div', null,
+                            React.createElement('label', { htmlFor: "title-edit", className: "font-semibold text-sm text-gray-700" }, "Title"),
+                            React.createElement('input', { id: "title-edit", type: "text", value: title, onChange: e => setTitle(e.target.value), className: "w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", required: true })
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { htmlFor: "desc-edit", className: "font-semibold text-sm text-gray-700" }, "Short Description"),
+                            React.createElement('textarea', { id: "desc-edit", value: desc, onChange: e => setDesc(e.target.value), className: "w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", rows: 2, required: true })
+                        ),
+                        React.createElement('div', { className: "flex gap-4" },
+                            React.createElement('div', { className: "flex-grow" },
+                                React.createElement('label', { htmlFor: "category-edit", className: "font-semibold text-sm text-gray-700" }, "Category"),
+                                React.createElement('select', { id: "category-edit", value: category, onChange: e => setCategory(e.target.value), className: "w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", required: true },
+                                    CATEGORIES.map(c => React.createElement('option', { key: c, value: c }, c.charAt(0).toUpperCase() + c.slice(1)))
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { htmlFor: "image-edit", className: "font-semibold text-sm text-gray-700" }, "Icon"),
+                                React.createElement('input', { id: "image-edit", type: "text", value: image, onChange: e => setImage(e.target.value), className: "w-20 text-center mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", maxLength: 2 })
+                            )
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { htmlFor: "text-edit", className: "font-semibold text-sm text-gray-700" }, "Prompt Text"),
+                            React.createElement('textarea', { id: "text-edit", value: text, onChange: e => setText(e.target.value), className: "w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", rows: 6, required: true })
+                        ),
+                        React.createElement('button', { type: "submit", disabled: isUpdating, className: "w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:bg-gray-400" }, isUpdating ? t.saving : t.save_changes)
+                    )
+                )
+            );
+        };
+        
+        // From: components/user/AssistantScreen.tsx
+        const decodeFromBase64 = (base64) => {
+            const binaryString = atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes;
+        };
+        const decodeAudioDataTTS = async (data, ctx, sampleRate, numChannels) => {
+            const dataInt16 = new Int16Array(data.buffer);
+            const frameCount = dataInt16.length / numChannels;
+            const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+            for (let channel = 0; channel < numChannels; channel++) {
+                const channelData = buffer.getChannelData(channel);
+                for (let i = 0; i < frameCount; i++) {
+                    channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+                }
+            }
+            return buffer;
+        };
+        
+        const AssistantScreen = ({ t, setScreen }) => {
+            const [chat, setChat] = useState(null);
+            const [messages, setMessages] = useState([]);
+            const [input, setInput] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [likedMessages, setLikedMessages] = useState(new Set());
+            const [copiedIndex, setCopiedIndex] = useState(null);
+            const [speakingIndex, setSpeakingIndex] = useState(null);
+            const [isSpeechLoading, setIsSpeechLoading] = useState(null);
+            const [outputAudioContext, setOutputAudioContext] = useState(null);
+            const messagesEndRef = useRef(null);
+            const currentAudioSource = useRef(null);
+            useEffect(() => {
+                const ai = new GoogleGenAI({ apiKey: window.process.env.API_KEY });
+                const newChat = ai.chats.create({ model: 'gemini-2.5-flash', config: { systemInstruction: "You are an expert AI assistant specializing in application development. Your goal is to provide clear, concise, and helpful answers to questions about how to build applications. Keep your responses short and to the point. Answer in the same language as the user's question." } });
+                setChat(newChat);
+                setMessages([{ role: 'model', text: t.welcome_assistant }]);
+                const outCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                setOutputAudioContext(outCtx);
+                return () => { if (currentAudioSource.current) { currentAudioSource.current.stop(); } outCtx.close(); };
+            }, [t.welcome_assistant]);
+            const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            useEffect(scrollToBottom, [messages, loading]);
+            const handleSendMessage = async (e) => {
+                e.preventDefault();
+                if (!input.trim() || loading || !chat) return;
+                const userMessage = { role: 'user', text: input };
+                setMessages(prev => [...prev, userMessage]);
+                setInput(''); setLoading(true);
+                try {
+                    const response = await chat.sendMessageStream({ message: input });
+                    let modelResponse = '';
+                    setMessages(prev => [...prev, { role: 'model', text: '' }]);
+                    for await (const chunk of response) {
+                        modelResponse += chunk.text;
+                        setMessages(prev => { const newMessages = [...prev]; newMessages[newMessages.length - 1].text = modelResponse; return newMessages; });
+                    }
+                } catch (error) { console.error("Error:", error); setMessages(prev => [...prev, { role: 'model', text: 'Sorry, something went wrong.' }]); } 
+                finally { setLoading(false); }
+            };
+            const handleCopy = (text, index) => { navigator.clipboard.writeText(text); setCopiedIndex(index); setTimeout(() => setCopiedIndex(null), 2000); };
+            const handleSpeak = async (text, index) => {
+                if (currentAudioSource.current) { currentAudioSource.current.stop(); currentAudioSource.current = null; }
+                if (speakingIndex === index) { setSpeakingIndex(null); return; }
+                if (!outputAudioContext) return;
+                if (outputAudioContext.state === 'suspended') { outputAudioContext.resume(); }
+                setIsSpeechLoading(index); setSpeakingIndex(null);
+                try {
+                    const ai = new GoogleGenAI({ apiKey: window.process.env.API_KEY });
+                    const response = await ai.models.generateContent({ model: "gemini-2.5-flash-preview-tts", contents: [{ parts: [{ text }] }], config: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } } } });
+                    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                    if (base64Audio) {
+                        const audioBytes = decodeFromBase64(base64Audio);
+                        const audioBuffer = await decodeAudioDataTTS(audioBytes, outputAudioContext, 24000, 1);
+                        const source = outputAudioContext.createBufferSource();
+                        source.buffer = audioBuffer; source.connect(outputAudioContext.destination);
+                        source.onended = () => { setSpeakingIndex(null); currentAudioSource.current = null; };
+                        source.start(); currentAudioSource.current = source; setSpeakingIndex(index);
+                    }
+                } catch (err) { console.error("Speech Error:", err); alert("Could not generate audio."); } 
+                finally { setIsSpeechLoading(null); }
+            };
+            const handleLike = (index) => setLikedMessages(prev => { const newSet = new Set(prev); if (newSet.has(index)) { newSet.delete(index); } else { newSet.add(index); } return newSet; });
+            const TypingIndicator = () => React.createElement('div', { className: "flex items-start gap-3" }, React.createElement('div', { className: "w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0" }, React.createElement(Bot, { size: 24, className: "text-gray-600" })), React.createElement('div', { className: "bg-gray-200 rounded-2xl p-3 flex items-center gap-2 rounded-bl-none" }, React.createElement('span', { className: "w-2 h-2 bg-gray-500 rounded-full animate-pulse", style: { animationDelay: '0s' } }), React.createElement('span', { className: "w-2 h-2 bg-gray-500 rounded-full animate-pulse", style: { animationDelay: '0.2s' } }), React.createElement('span', { className: "w-2 h-2 bg-gray-500 rounded-full animate-pulse", style: { animationDelay: '0.4s' } })));
+            return React.createElement('div', null,
+                React.createElement('div', { className: "bg-white shadow-md p-4" }, React.createElement('h1', { className: "text-2xl font-bold text-purple-600" }, `🤖 ${t.assistant}`)),
+                React.createElement('div', { className: "w-full max-w-3xl mx-auto px-4 py-4" },
+                    React.createElement('div', { className: "space-y-4 mb-6" },
+                        messages.map((msg, index) => React.createElement('div', { key: index, className: `flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}` },
+                            React.createElement('div', { className: `flex items-start gap-3 w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}` },
+                                msg.role === 'model' && React.createElement('div', { className: "w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0" }, React.createElement(Bot, { size: 24, className: "text-gray-600" })),
+                                React.createElement('div', { className: `rounded-2xl p-3 whitespace-pre-wrap max-w-lg ${msg.role === 'user' ? 'bg-blue-500 text-white rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'}` }, msg.text)),
+                            msg.role === 'model' && msg.text && React.createElement('div', { className: "flex items-center gap-3 mt-2", style: { paddingLeft: '52px' } },
+                                React.createElement('button', { onClick: () => handleCopy(msg.text, index), className: "text-gray-500 hover:text-blue-600 transition-colors", title: "Copy" }, copiedIndex === index ? React.createElement(Check, { size: 18, className: "text-green-600" }) : React.createElement(Copy, { size: 18 })),
+                                React.createElement('button', { onClick: () => handleSpeak(msg.text, index), className: "text-gray-500 hover:text-blue-600 transition-colors w-5 h-5 flex items-center justify-center", title: "Speak" }, isSpeechLoading === index ? React.createElement(Loader2, { size: 18, className: "animate-spin" }) : React.createElement(Volume2, { size: 18, className: speakingIndex === index ? 'text-blue-600 animate-pulse' : '' })),
+                                React.createElement('button', { onClick: () => handleLike(index), className: "text-gray-500 hover:text-blue-600 transition-colors", title: "Like" }, React.createElement(ThumbsUp, { size: 18, className: likedMessages.has(index) ? 'text-blue-600 fill-blue-200' : '' }))
+                            )
+                        )),
+                        loading && React.createElement(TypingIndicator)
+                    ),
+                    React.createElement('div', { ref: messagesEndRef }),
+                    React.createElement('form', { onSubmit: handleSendMessage, className: "flex items-center gap-2 bg-white border rounded-full p-1 shadow-sm" },
+                        React.createElement('input', { type: "text", value: input, onChange: (e) => setInput(e.target.value), placeholder: t.ask_anything_dev, className: "flex-grow px-4 py-2 bg-transparent focus:outline-none disabled:bg-gray-100/50 rounded-full", disabled: loading }),
+                        React.createElement('button', { type: "button", onClick: () => setScreen('live-assistant'), className: "p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0", 'aria-label': "Start voice chat" }, React.createElement(Mic, { size: 20 })),
+                        React.createElement('button', { type: "submit", disabled: loading || !input.trim(), className: "bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-shrink-0", 'aria-label': "Send message" }, React.createElement(Send, { size: 20 }))
+                    )
+                )
+            );
+        };
+        
+        // From: components/user/LiveAssistantScreen.tsx
+        const decode = (base64) => { const binaryString = atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); } return bytes; };
+        const decodeAudioDataLive = async (data, ctx, sampleRate, numChannels) => { const dataInt16 = new Int16Array(data.buffer); const frameCount = dataInt16.length / numChannels; const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate); for (let channel = 0; channel < numChannels; channel++) { const channelData = buffer.getChannelData(channel); for (let i = 0; i < frameCount; i++) { channelData[i] = dataInt16[i * numChannels + channel] / 32768.0; } } return buffer; };
+        const encode = (bytes) => { let binary = ''; const len = bytes.byteLength; for (let i = 0; i < len; i++) { binary += String.fromCharCode(bytes[i]); } return btoa(binary); };
+        const createBlob = (data) => { const l = data.length; const int16 = new Int16Array(l); for (let i = 0; i < l; i++) { int16[i] = data[i] * 32768; } return { data: encode(new Uint8Array(int16.buffer)), mimeType: 'audio/pcm;rate=16000' }; };
+
+        const Avatar = ({ status }) => {
+            const isSpeaking = status === 'speaking';
+            const isListening = status === 'listening';
+            return React.createElement('div', { className: "relative w-64 h-80 flex items-center justify-center" },
+                React.createElement('style', null, `
+                    @keyframes talk-animation { 0%, 100% { height: 4px; transform: scaleY(1); } 50% { height: 18px; transform: scaleY(1.2); } }
+                    .mouth-speak { animation: talk-animation 0.35s infinite ease-in-out; }
+                    @keyframes head-move-speak { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(2px) rotate(1deg); } }
+                    .head-speak { animation: head-move-speak 1.5s infinite ease-in-out; }
+                    @keyframes idle-breath { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+                    .body-idle { animation: idle-breath 4s infinite ease-in-out; }
+                    @keyframes listen-pulse { 0% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.05); opacity: 0.5; } 100% { transform: scale(1); opacity: 0.3; } }
+                    .pulse-bg { animation: listen-pulse 2.5s infinite ease-in-out; }
+                    @keyframes eye-blink { 0%, 95%, 100% { transform: scaleY(1); } 97.5% { transform: scaleY(0.1); } }
+                    .eye-blink { animation: eye-blink 5s infinite; }`),
+                React.createElement('div', { className: `absolute -inset-2 rounded-full bg-blue-500 transition-colors duration-500 ${isListening ? 'pulse-bg' : 'opacity-0 scale-95'}` }),
+                React.createElement('div', { className: `relative w-48 transition-transform duration-300 ${status !== 'speaking' ? 'body-idle' : ''}` },
+                    React.createElement('div', { className: `relative w-48 h-48 rounded-full bg-gradient-to-br from-indigo-300 to-purple-300 flex items-center justify-center shadow-inner overflow-hidden z-10 ${isSpeaking ? 'head-speak' : ''}` },
+                        React.createElement('div', { className: "relative w-full h-full" },
+                            React.createElement('div', { className: "absolute -top-10 left-1/2 -translate-x-1/2 w-[110%] h-[60%] bg-[#3a322e] rounded-b-full" }),
+                            React.createElement('div', { className: "absolute top-[35%] w-full flex justify-center gap-8" },
+                                React.createElement('div', { className: "w-5 h-7 bg-white rounded-full flex items-center justify-center shadow-md eye-blink" }, React.createElement('div', { className: "w-2.5 h-4 bg-gray-800 rounded-full" })),
+                                React.createElement('div', { className: "w-5 h-7 bg-white rounded-full flex items-center justify-center shadow-md eye-blink", style: { animationDelay: '0.1s' } }, React.createElement('div', { className: "w-2.5 h-4 bg-gray-800 rounded-full" }))
+                            ),
+                            React.createElement('div', { className: `absolute bottom-[20%] left-1/2 -translate-x-1/2 w-10 bg-[#2c2522]/80 transition-all duration-200 rounded-lg ${isSpeaking ? 'mouth-speak' : 'h-1'}` })
+                        )
+                    ),
+                    React.createElement('div', { className: "absolute top-[168px] left-1/2 -translate-x-1/2 w-12 h-10 bg-gradient-to-b from-indigo-200 to-purple-200 z-0" }),
+                    React.createElement('div', { className: "absolute top-[180px] left-1/2 -translate-x-1/2 w-64 h-32 bg-gradient-to-b from-gray-700 to-gray-800 rounded-t-[50%] shadow-lg" })
+                )
+            );
+        };
+        const LiveAssistantScreen = ({ setScreen, t }) => {
+            const [status, setStatus] = useState('connecting');
+            const sessionPromiseRef = useRef(null); const inputStreamRef = useRef(null); const inputAudioContextRef = useRef(null); const outputAudioContextRef = useRef(null); const scriptProcessorRef = useRef(null); const sourcesRef = useRef(new Set()); const nextStartTimeRef = useRef(0);
+            const handleEndSession = useCallback(() => {
+                if (sessionPromiseRef.current) { sessionPromiseRef.current.then(session => session.close()); sessionPromiseRef.current = null; }
+                if (inputStreamRef.current) { inputStreamRef.current.getTracks().forEach(track => track.stop()); inputStreamRef.current = null; }
+                if (scriptProcessorRef.current) { scriptProcessorRef.current.disconnect(); scriptProcessorRef.current = null; }
+                if (inputAudioContextRef.current) { inputAudioContextRef.current.close(); inputAudioContextRef.current = null; }
+                sourcesRef.current.forEach(source => source.stop()); sourcesRef.current.clear(); setStatus('ended'); setScreen('assistant');
+            }, [setScreen]);
+            useEffect(() => {
+                const outCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                outputAudioContextRef.current = outCtx;
+                const startSession = async () => {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        inputStreamRef.current = stream;
+                        const inputCtx = new(window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                        inputAudioContextRef.current = inputCtx;
+                        const ai = new GoogleGenAI({ apiKey: window.process.env.API_KEY });
+                        sessionPromiseRef.current = ai.live.connect({ model: 'gemini-2.5-flash-native-audio-preview-09-2025', callbacks: {
+                            onopen: () => {
+                                setStatus('listening'); const source = inputCtx.createMediaStreamSource(stream); const processor = inputCtx.createScriptProcessor(4096, 1, 1);
+                                scriptProcessorRef.current = processor;
+                                processor.onaudioprocess = (audioProcessingEvent) => { const inputData = audioProcessingEvent.inputBuffer.getChannelData(0); const pcmBlob = createBlob(inputData); sessionPromiseRef.current?.then((session) => { session.sendRealtimeInput({ media: pcmBlob }); }); };
+                                source.connect(processor); processor.connect(inputCtx.destination);
+                            },
+                            onmessage: async (message) => {
+                                const outputAudioContext = outputAudioContextRef.current; const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+                                if (base64Audio && outputAudioContext) {
+                                    setStatus('speaking'); nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputAudioContext.currentTime);
+                                    const audioBuffer = await decodeAudioDataLive(decode(base64Audio), outputAudioContext, 24000, 1); const source = outputAudioContext.createBufferSource();
+                                    source.buffer = audioBuffer; source.connect(outputAudioContext.destination);
+                                    source.addEventListener('ended', () => { sourcesRef.current.delete(source); if (sourcesRef.current.size === 0) { setStatus('listening'); } });
+                                    source.start(nextStartTimeRef.current); nextStartTimeRef.current += audioBuffer.duration; sourcesRef.current.add(source);
+                                }
+                                if (message.serverContent?.interrupted) { sourcesRef.current.forEach(source => source.stop()); sourcesRef.current.clear(); nextStartTimeRef.current = 0; setStatus('listening'); }
+                            },
+                            onerror: (e) => { console.error('Session error:', e); setStatus('error'); },
+                            onclose: (e) => { if (status !== 'ended') { setStatus('ended'); } },
+                        }, config: { responseModalities: [Modality.AUDIO], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } }, systemInstruction: "You are a professional, friendly, and empathetic AI assistant. Your expertise is in application development. When a user speaks to you, respond in a natural, conversational manner, just like a human. Infuse your responses with a warm and helpful tone. Provide clear and concise answers, but feel free to engage in a friendly, human-like conversation. Always answer in the same language as the user's question." } });
+                    } catch (error) { console.error('Error starting recording:', error); setStatus('error'); alert('Could not start recording. Please ensure you have given microphone permissions.'); }
+                };
+                startSession();
+                return () => { handleEndSession(); if (outputAudioContextRef.current) { outputAudioContextRef.current.close(); } };
+            }, [handleEndSession]);
+            const getStatusInfo = () => { switch(status) { case 'connecting': return 'Connecting...'; case 'listening': return 'Listening...'; case 'speaking': return 'Speaking...'; case 'ended': return 'Session Ended'; case 'error': return 'Connection Error'; default: return ''; } };
+            return React.createElement('div', { className: "fixed inset-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white flex flex-col z-50 overflow-hidden" },
+                React.createElement('div', { className: "p-4 flex items-center justify-between flex-shrink-0" },
+                    React.createElement('button', { onClick: handleEndSession, className: "p-2 rounded-full hover:bg-white/10 transition-colors" }, React.createElement(ChevronLeft, { size: 24 })),
+                    React.createElement('h1', { className: "text-lg font-bold" }, "Live Assistant"),
+                    React.createElement('div', { className: "w-10" })
+                ),
+                React.createElement('div', { className: "flex-grow flex flex-col items-center justify-center p-4" },
+                    React.createElement(Avatar, { status: status }),
+                    React.createElement('p', { className: "mt-6 text-2xl font-semibold tracking-wider h-8" }, getStatusInfo())
+                ),
+                React.createElement('div', { className: "p-4 flex justify-center flex-shrink-0" },
+                    React.createElement('button', { onClick: handleEndSession, className: "bg-red-600 p-4 rounded-full shadow-lg hover:bg-red-700 transition-transform transform hover:scale-105" }, React.createElement(Phone, { size: 32 }))
+                )
+            );
+        };
+        
+        // From: components/admin/DashboardScreen.tsx
+        const StatCardAdmin = ({ title, value, colorClass }) => (
+            React.createElement('div', { className: "bg-white rounded-lg shadow p-4 transform hover:scale-105 transition-transform duration-300" },
+                React.createElement('p', { className: "text-sm text-gray-600" }, title),
+                React.createElement('p', { className: `text-3xl font-bold ${colorClass}` }, value)
+            )
+        );
+        const NavCardAdmin = ({ title, icon, description, gradient, onClick }) => (
+            React.createElement('button', { onClick: onClick, className: `${gradient} text-white rounded-lg p-8 hover:shadow-2xl font-bold text-left transform hover:-translate-y-1 transition-all duration-300 flex flex-col h-full` },
+                React.createElement('div', { className: "text-4xl mb-2" }, icon),
+                React.createElement('p', { className: "text-xl flex-grow" }, title),
+                React.createElement('p', { className: "text-sm opacity-80" }, description)
+            )
+        );
+        const DashboardScreen = ({ prompts, setScreen }) => {
+            const avgRating = (prompts.reduce((acc, p) => acc + p.rating, 0) / (prompts.length || 1)).toFixed(1);
+            return React.createElement('div', { className: "max-w-6xl mx-auto px-4 py-6" },
+                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-8" },
+                    React.createElement(StatCardAdmin, { title: "Total Prompts", value: prompts.length, colorClass: "text-gray-800" }),
+                    React.createElement(StatCardAdmin, { title: "Approved", value: prompts.filter(p => p.approved).length, colorClass: "text-green-600" }),
+                    React.createElement(StatCardAdmin, { title: "Avg Rating", value: avgRating, colorClass: "text-blue-600" })
+                ),
+                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6" },
+                    React.createElement(NavCardAdmin, { title: "Manage Prompts", icon: "📖", description: `${prompts.length} total items`, gradient: "bg-gradient-to-br from-green-400 to-emerald-500", onClick: () => setScreen('approved') }),
+                    React.createElement(NavCardAdmin, { title: "Analytics", icon: "📊", description: "View charts & stats", gradient: "bg-gradient-to-br from-blue-400 to-indigo-500", onClick: () => setScreen('analytics') }),
+                    React.createElement(NavCardAdmin, { title: "Add New Prompt", icon: "✍️", description: "Create & auto-approve", gradient: "bg-gradient-to-br from-purple-400 to-pink-500", onClick: () => setScreen('add') })
+                )
+            );
+        };
+        
+        // From: components/admin/ApprovedScreen.tsx
+        const ApprovedScreen = ({ prompts, onDelete }) => (
+            React.createElement('div', null,
+                React.createElement('div', { className: "bg-white shadow-md p-4 border-b" }, React.createElement('h1', { className: "text-2xl font-bold text-purple-600" }, "📖 Manage Prompts")),
+                React.createElement('div', { className: "max-w-6xl mx-auto px-4 py-6" },
+                    prompts.length === 0 ? React.createElement('p', { className: "text-center text-xl text-gray-600 py-10" }, "No prompts have been submitted yet.") :
+                    React.createElement('div', { className: "bg-white rounded-lg shadow-md overflow-x-auto" },
+                        React.createElement('table', { className: "w-full text-left min-w-[600px]" },
+                            React.createElement('thead', { className: "bg-gray-50 border-b" }, React.createElement('tr', null,
+                                React.createElement('th', { className: "p-4 font-semibold" }, "Title"), React.createElement('th', { className: "p-4 font-semibold" }, "Author"), React.createElement('th', { className: "p-4 font-semibold" }, "Rating"), React.createElement('th', { className: "p-4 font-semibold text-right" }, "Actions")
+                            )),
+                            React.createElement('tbody', null, prompts.map(p => React.createElement('tr', { key: p.id, className: "border-b last:border-0 hover:bg-gray-50" },
+                                React.createElement('td', { className: "p-4 font-medium" }, p.title),
+                                React.createElement('td', { className: "p-4" }, p.author),
+                                React.createElement('td', { className: "p-4" }, `⭐ ${p.rating.toFixed(1)}`),
+                                React.createElement('td', { className: "p-4 text-right" }, React.createElement('div', { className: "flex gap-2 justify-end" },
+                                    React.createElement('button', { onClick: () => onDelete(p), className: "bg-red-100 text-red-700 text-xs px-3 py-1 rounded-full font-semibold hover:bg-red-200" }, "Delete")
+                                ))
+                            )))
+                        )
+                    )
+                )
+            )
+        );
+
+        // From: components/admin/AnalyticsScreen.tsx
+        const AnalyticsScreen = ({ prompts }) => {
+            const approvedPrompts = prompts.filter(p => p.approved);
+            const promptsPerCategory = approvedPrompts.reduce((acc, prompt) => { acc[prompt.category] = (acc[prompt.category] || 0) + 1; return acc; }, {});
+            const categoryChartData = Object.entries(promptsPerCategory).map(([name, value]) => ({ name, count: value }));
+            const ratingData = [{ name: '5 Stars', count: approvedPrompts.filter(p => p.rating >= 4.5).length }, { name: '4 Stars', count: approvedPrompts.filter(p => p.rating >= 4 && p.rating < 4.5).length }, { name: '3 Stars', count: approvedPrompts.filter(p => p.rating >= 3 && p.rating < 4).length }, { name: '< 3 Stars', count: approvedPrompts.filter(p => p.rating < 3).length }].filter(d => d.count > 0);
+            const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+            return React.createElement('div', null,
+                React.createElement('div', { className: "bg-white shadow-md p-4 border-b" }, React.createElement('h1', { className: "text-2xl font-bold text-blue-600" }, "📊 Analytics")),
+                React.createElement('div', { className: "max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-8" },
+                    React.createElement('div', { className: "bg-white p-6 rounded-lg shadow-lg" },
+                        React.createElement('h2', { className: "text-lg font-bold mb-4" }, "Prompts per Category"),
+                        React.createElement(ResponsiveContainer, { width: "100%", height: 300 }, React.createElement(BarChart, { data: categoryChartData }, React.createElement(CartesianGrid, { strokeDasharray: "3 3" }), React.createElement(XAxis, { dataKey: "name" }), React.createElement(YAxis, null), React.createElement(Tooltip, null), React.createElement(Legend, null), React.createElement(Bar, { dataKey: "count", fill: "#8884d8" })))
+                    ),
+                    React.createElement('div', { className: "bg-white p-6 rounded-lg shadow-lg" },
+                        React.createElement('h2', { className: "text-lg font-bold mb-4" }, "Rating Distribution"),
+                        React.createElement(ResponsiveContainer, { width: "100%", height: 300 }, React.createElement(PieChart, null, React.createElement(Pie, { data: ratingData, cx: "50%", cy: "50%", labelLine: false, label: ({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`, outerRadius: 100, fill: "#8884d8", dataKey: "count" }, ratingData.map((entry, index) => React.createElement(Cell, { key: `cell-${index}`, fill: COLORS[index % COLORS.length] }))), React.createElement(Tooltip, null)))
+                    )
+                )
+            );
+        };
+        
+        // From: components/user/UserApp.tsx
+        const RatingModal = ({ prompt, onClose, onRatePrompt }) => {
+            const [userRating, setUserRating] = useState(0); const [hoverRating, setHoverRating] = useState(0); const [loadingRating, setLoadingRating] = useState(true);
+            useEffect(() => { const fetchUserRating = async () => { const currentUser = auth.currentUser; if (!currentUser) { setLoadingRating(false); return; } try { const ratingDocRef = doc(db, 'prompts', prompt.id, 'ratings', currentUser.uid); const docSnap = await getDoc(ratingDocRef); if (docSnap.exists()) { setUserRating(docSnap.data().rating); } } catch (error) { console.error("Error fetching user rating:", error); } finally { setLoadingRating(false); } }; fetchUserRating(); }, [prompt.id]);
+            const handleRatingClick = (newRating) => { setUserRating(newRating); onRatePrompt(prompt.id, newRating); onClose(); };
+            return React.createElement('div', { className: "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4", onClick: onClose },
+                React.createElement('div', { className: "bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative", onClick: (e) => e.stopPropagation(), style: { animation: 'fade-in-up 0.3s ease-out forwards' } },
+                    React.createElement('button', { onClick: onClose, className: "absolute top-4 right-4 text-gray-400 hover:text-gray-600" }, React.createElement(X, { size: 24 })),
+                    React.createElement('h2', { className: "text-xl font-bold text-gray-800 mb-2" }, "Rate this Idea"),
+                    React.createElement('p', { className: "text-gray-600 mb-6 truncate" }, prompt.title),
+                    loadingRating ? React.createElement('div', { className: "h-12 flex items-center justify-center" }, React.createElement('p', { className: "text-sm text-gray-500" }, "Loading your previous rating...")) : React.createElement('div', { className: "flex flex-col items-center" }, React.createElement('div', { className: "flex items-center gap-2" }, [1, 2, 3, 4, 5].map((star) => React.createElement('button', { key: star, onMouseEnter: () => setHoverRating(star), onMouseLeave: () => setHoverRating(0), onClick: () => handleRatingClick(star), 'aria-label': `Rate ${star} stars` }, React.createElement(Star, { size: 40, className: `cursor-pointer transition-all duration-150 transform hover:scale-110 ${(hoverRating || userRating) >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}` })))), userRating > 0 && React.createElement('p', { className: "text-sm text-gray-600 mt-4" }, `Your rating: ${userRating} star${userRating > 1 ? 's' : ''}`))),
+                React.createElement('style', null, `@keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`)
+            );
+        };
+        const EditProfileModal = ({ user, onClose, onUpdateProfile }) => {
+            const [displayName, setDisplayName] = useState(user.displayName || ''); const [loading, setLoading] = useState(false);
+            const handleSubmit = async (e) => { e.preventDefault(); setLoading(true); await onUpdateProfile(displayName); setLoading(false); };
+            return React.createElement('div', { className: "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4", onClick: onClose },
+                React.createElement('div', { className: "bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative", onClick: (e) => e.stopPropagation(), style: { animation: 'fade-in-up 0.3s ease-out forwards' } },
+                    React.createElement('button', { onClick: onClose, className: "absolute top-4 right-4 text-gray-400 hover:text-gray-600" }, React.createElement(X, { size: 24 })),
+                    React.createElement('h2', { className: "text-xl font-bold text-gray-800 mb-6" }, "Edit Profile"),
+                    React.createElement('form', { onSubmit: handleSubmit },
+                        React.createElement('div', { className: "mb-4" },
+                            React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1", htmlFor: "displayName" }, "Display Name"),
+                            React.createElement('input', { id: "displayName", type: "text", value: displayName, onChange: (e) => setDisplayName(e.target.value), placeholder: "Enter your name", className: "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" })
+                        ),
+                        React.createElement('button', { type: "submit", disabled: loading, className: "w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:bg-gray-400" }, loading ? 'Saving...' : 'Save Changes')
+                    )
+                )
+            );
+        };
+        const UserLogoutConfirmationModal = ({ onConfirm, onCancel }) => (
+            React.createElement('div', { className: "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4" },
+                React.createElement('div', { className: "bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative", style: { animation: 'fade-in-up 0.3s ease-out forwards' } },
+                    React.createElement('h2', { className: "text-xl font-bold text-gray-800 mb-2" }, "Confirm Logout"),
+                    React.createElement('p', { className: "text-gray-600 mb-6" }, "Are you sure you want to log out?"),
+                    React.createElement('div', { className: "flex gap-4" },
+                        React.createElement('button', { onClick: onCancel, className: "flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors" }, "Cancel"),
+                        React.createElement('button', { onClick: onConfirm, className: "flex-1 bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition-colors" }, "Logout")
+                    )
+                )
+            )
+        );
+        const UserApp = ({ lang, setLang, t }) => {
+            const [screen, setScreen] = useState('home'); const [favorites, setFavorites] = useState([]); const [prompts, setPrompts] = useState([]); const [myPrompts, setMyPrompts] = useState([]); const [loading, setLoading] = useState(true); const [user, setUser] = useState(auth.currentUser); const [ratingModalPrompt, setRatingModalPrompt] = useState(null); const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false); const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+            useEffect(() => { const q = query(collection(db, 'prompts'), orderBy('createdAt', 'desc')); const unsubscribe = onSnapshot(q, (querySnapshot) => { const promptsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); setPrompts(promptsData); setLoading(false); }, (error) => { console.error("Error fetching prompts: ", error); setLoading(false); }); return () => unsubscribe(); }, []);
+            useEffect(() => { if (user) { const userDocRef = doc(db, 'users', user.uid); const unsubFavorites = onSnapshot(userDocRef, (docSnap) => { if (docSnap.exists()) { setFavorites(docSnap.data().favorites || []); } else { setDoc(userDocRef, { email: user.email, favorites: [] }); setFavorites([]); } }); const myPromptsQuery = query(collection(db, 'prompts'), where('authorId', '==', user.uid)); const unsubMyPrompts = onSnapshot(myPromptsQuery, (querySnapshot) => { const userPromptsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); userPromptsData.sort((a, b) => (b.createdAt?.toDate()?.getTime() || 0) - (a.createdAt?.toDate()?.getTime() || 0)); setMyPrompts(userPromptsData); }); return () => { unsubFavorites(); unsubMyPrompts(); }; } else { setFavorites([]); setMyPrompts([]); } }, [user]);
+            const handleToggleFavorite = async (promptId) => { if (!user) return; const userDocRef = doc(db, 'users', user.uid); const isCurrentlyFavorite = favorites.includes(promptId); setFavorites(prev => isCurrentlyFavorite ? prev.filter(id => id !== promptId) : [...prev, promptId]); try { await updateDoc(userDocRef, { favorites: isCurrentlyFavorite ? arrayRemove(promptId) : arrayUnion(promptId) }); } catch (error) { setFavorites(prev => isCurrentlyFavorite ? [...prev, promptId] : prev.filter(id => id !== promptId)); alert("Could not update favorites."); } };
+            const handleAddPrompt = async (newPrompt) => { if (!user) { alert("You must be logged in."); return; } try { await addDoc(collection(db, 'prompts'), { ...newPrompt, rating: 0, approved: true, author: user.displayName || user.email || 'Anonymous', authorId: user.uid, createdAt: serverTimestamp() }); alert('Prompt submitted!'); setScreen('myPrompts'); } catch (error) { alert('Failed to submit prompt.'); } };
+            const handleUpdatePrompt = async (promptId, updatedData) => { try { await updateDoc(doc(db, 'prompts', promptId), { ...updatedData, approved: true }); alert('Prompt updated!'); setScreen('myPrompts'); } catch (error) { alert("Failed to update prompt."); } };
+            const handleRatePrompt = async (promptId, newRating) => { if (!user) { alert("You must be logged in."); return; } const ratingDocRef = doc(db, 'prompts', promptId, 'ratings', user.uid); const promptDocRef = doc(db, 'prompts', promptId); try { await setDoc(ratingDocRef, { rating: newRating }); const ratingsSnapshot = await getDocs(collection(db, 'prompts', promptId, 'ratings')); const ratings = ratingsSnapshot.docs.map(doc => doc.data().rating); if (ratings.length > 0) { const averageRating = ratings.reduce((acc, r) => acc + r, 0) / ratings.length; await updateDoc(promptDocRef, { rating: parseFloat(averageRating.toFixed(1)) }); } } catch (error) { alert("Could not submit rating."); } };
+            const handleUpdateProfile = async (displayName) => { if (!auth.currentUser) return; try { await updateProfile(auth.currentUser, { displayName }); setUser({ ...auth.currentUser }); alert("Profile updated!"); setIsEditProfileModalOpen(false); } catch (error) { alert("Failed to update profile."); } };
+            const handleLogout = () => setIsLogoutModalOpen(true); const handleConfirmLogout = async () => { await signOut(auth); setIsLogoutModalOpen(false); };
+            const handleOpenRatingModal = (prompt) => setRatingModalPrompt(prompt); const handleCloseRatingModal = () => setRatingModalPrompt(null); const handleOpenEditProfileModal = () => setIsEditProfileModalOpen(true);
+            const renderScreen = () => {
+                if (screen.startsWith('detail-')) { const id = screen.split('-')[1]; const prompt = prompts.find(p => p.id === id); if (prompt) return React.createElement(DetailScreen, { prompt, setScreen, t, onRatePrompt: handleRatePrompt }); }
+                if (screen.startsWith('edit-')) { const id = screen.split('-')[1]; const prompt = myPrompts.find(p => p.id === id); if (prompt) return React.createElement(EditPromptScreen, { prompt, onUpdatePrompt: handleUpdatePrompt, t, setScreen }); }
+                switch (screen) {
+                    case 'home': return React.createElement(HomeScreen, { prompts, setScreen, favorites, onToggleFavorite: handleToggleFavorite, onRateClick: handleOpenRatingModal, t });
+                    case 'fav': const favPrompts = prompts.filter(p => favorites.includes(p.id)); return React.createElement(FavoritesScreen, { favPrompts, setScreen, favorites, onToggleFavorite: handleToggleFavorite, onRateClick: handleOpenRatingModal, t });
+                    case 'add': return React.createElement(AddPromptScreen, { onAddPrompt: handleAddPrompt, t });
+                    case 'assistant': return React.createElement(AssistantScreen, { t, setScreen });
+                    case 'myPrompts': return React.createElement(MyPromptsScreen, { myPrompts, t, setScreen });
+                    case 'settings': return React.createElement(SettingsScreen, { user, handleLogout, lang, setLang, setScreen, t });
+                    case 'profile': return React.createElement(UserProfileScreen, { user, myPromptsCount: myPrompts.length, favoritesCount: favorites.length, setScreen, onEditProfileClick: handleOpenEditProfileModal, t });
+                    case 'live-assistant': return React.createElement(LiveAssistantScreen, { setScreen, t });
+                    default: return React.createElement(HomeScreen, { prompts, setScreen, favorites, onToggleFavorite: handleToggleFavorite, onRateClick: handleOpenRatingModal, t });
+                }
+            };
+            return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-sans" },
+                ratingModalPrompt && React.createElement(RatingModal, { prompt: ratingModalPrompt, onClose: handleCloseRatingModal, onRatePrompt: handleRatePrompt }),
+                isEditProfileModalOpen && user && React.createElement(EditProfileModal, { user, onClose: () => setIsEditProfileModalOpen(false), onUpdateProfile: handleUpdateProfile }),
+                isLogoutModalOpen && React.createElement(UserLogoutConfirmationModal, { onConfirm: handleConfirmLogout, onCancel: () => setIsLogoutModalOpen(false) }),
+                React.createElement('div', { className: "sticky top-0 z-40 bg-white/80 backdrop-blur-sm shadow-md" }, React.createElement('div', { className: "max-w-6xl mx-auto px-4 py-3" }, React.createElement('h1', { className: "text-2xl font-bold text-blue-600" }, "💡 Ideas"))),
+                React.createElement('main', { className: "pb-24" }, loading ? React.createElement('div', { className: "text-center py-20" }, "Loading prompts...") : renderScreen()),
+                React.createElement(BottomNav, { screen, setScreen, t })
+            );
+        };
+
+        // From: components/admin/AdminApp.tsx
+        const ConfirmationModal = ({ prompt, onConfirm, onCancel }) => {
+            if (!prompt) return null;
+            return React.createElement('div', { className: "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4" },
+                React.createElement('div', { className: "bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative", style: { animation: 'fade-in-up 0.3s ease-out forwards' } },
+                    React.createElement('button', { onClick: onCancel, className: "absolute top-4 right-4 text-gray-400 hover:text-gray-600" }, React.createElement(X, { size: 24 })),
+                    React.createElement('h2', { className: "text-xl font-bold text-gray-800 mb-2" }, "Confirm Deletion"),
+                    React.createElement('p', { className: "text-gray-600 mb-6" }, "Are you sure you want to delete the prompt: ", React.createElement('span', { className: "font-semibold" }, `"${prompt.title}"`), "? This action cannot be undone."),
+                    React.createElement('div', { className: "flex gap-4" },
+                        React.createElement('button', { onClick: onCancel, className: "flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors" }, "Cancel"),
+                        React.createElement('button', { onClick: onConfirm, className: "flex-1 bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition-colors" }, "Delete")
+                    )
+                ), React.createElement('style', null, `@keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`)
+            );
+        };
+        const AdminLogoutConfirmationModal = ({ onConfirm, onCancel }) => (
+            React.createElement('div', { className: "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4" },
+                React.createElement('div', { className: "bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative", style: { animation: 'fade-in-up 0.3s ease-out forwards' } },
+                    React.createElement('h2', { className: "text-xl font-bold text-gray-800 mb-2" }, "Confirm Logout"),
+                    React.createElement('p', { className: "text-gray-600 mb-6" }, "Are you sure you want to log out from the Admin Panel?"),
+                    React.createElement('div', { className: "flex gap-4" },
+                        React.createElement('button', { onClick: onCancel, className: "flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors" }, "Cancel"),
+                        React.createElement('button', { onClick: onConfirm, className: "flex-1 bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition-colors" }, "Logout")
+                    )
+                )
+            )
+        );
+        const AddPromptAdminScreen = ({ onAddPrompt, t }) => {
+            const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [category, setCategory] = useState(CATEGORIES[0]); const [text, setText] = useState(''); const [image, setImage] = useState('💡'); const [isGenerating, setIsGenerating] = useState(false);
+            const handleSubmit = (e) => { e.preventDefault(); if (!title || !desc || !category || !text) { alert('Please fill all fields'); return; } onAddPrompt({ title, desc, category, text, image }); };
+            const handleGenerate = async () => { if (!category) { alert('Please select a category first.'); return; } setIsGenerating(true); try { const result = await generatePrompt(category); if (result.title) setTitle(result.title); if (result.desc) setDesc(result.desc); if (result.text) setText(result.text); } catch (error) { alert(error.message); } finally { setIsGenerating(false); } };
+            return React.createElement('div', null, React.createElement('div', { className: "bg-white shadow-md p-4 border-b" }, React.createElement('h1', { className: "text-2xl font-bold text-purple-600" }, "✍️ Add New Prompt")), React.createElement('div', { className: "max-w-2xl mx-auto px-4 py-6" }, React.createElement('form', { onSubmit: handleSubmit, className: "bg-white rounded-lg shadow-lg p-6 space-y-4" }, React.createElement('div', null, React.createElement('label', { htmlFor: "admin-title", className: "font-semibold text-sm text-gray-700" }, "Title"), React.createElement('input', { id: "admin-title", type: "text", value: title, onChange: e => setTitle(e.target.value), className: "w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500", required: true })), React.createElement('div', null, React.createElement('label', { htmlFor: "admin-desc", className: "font-semibold text-sm text-gray-700" }, "Short Description"), React.createElement('textarea', { id: "admin-desc", value: desc, onChange: e => setDesc(e.target.value), className: "w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500", rows: 2, required: true })), React.createElement('div', { className: "flex gap-4" }, React.createElement('div', { className: "flex-grow" }, React.createElement('label', { htmlFor: "admin-category", className: "font-semibold text-sm text-gray-700" }, "Category"), React.createElement('select', { id: "admin-category", value: category, onChange: e => setCategory(e.target.value), className: "w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500", required: true }, CATEGORIES.map(c => React.createElement('option', { key: c, value: c }, c.charAt(0).toUpperCase() + c.slice(1))))), React.createElement('div', null, React.createElement('label', { htmlFor: "admin-image", className: "font-semibold text-sm text-gray-700" }, "Icon"), React.createElement('input', { id: "admin-image", type: "text", value: image, onChange: e => setImage(e.target.value), className: "w-20 text-center mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500", maxLength: 2 }))), React.createElement('div', null, React.createElement('div', { className: "flex justify-between items-center mb-1" }, React.createElement('label', { htmlFor: "admin-text", className: "font-semibold text-sm text-gray-700" }, "Prompt Text"), React.createElement('button', { type: "button", onClick: handleGenerate, disabled: isGenerating, className: "flex items-center gap-1 text-sm bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-semibold hover:bg-purple-200 disabled:opacity-50 disabled:cursor-wait" }, React.createElement(Sparkles, { size: 14 }), isGenerating ? t.generating : t.generate_with_ai)), React.createElement('textarea', { id: "admin-text", value: text, onChange: e => setText(e.target.value), className: "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500", rows: 6, required: true })), React.createElement('button', { type: "submit", disabled: isGenerating, className: "w-full bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors disabled:bg-gray-400" }, t.submit))));
+        };
+        const AdminApp = ({ lang, setLang, t }) => {
+            const [screen, setScreen] = useState('dashboard'); const [prompts, setPrompts] = useState([]); const [user, setUser] = useState(auth.currentUser); const [loading, setLoading] = useState(false); const [promptToDelete, setPromptToDelete] = useState(null); const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+            useEffect(() => { if (!user || !ADMIN_UIDS.includes(user.uid)) return; const q = query(collection(db, 'prompts'), orderBy('createdAt', 'desc')); const unsubscribe = onSnapshot(q, (querySnapshot) => { const promptsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); setPrompts(promptsData); }); return () => unsubscribe(); }, [user]);
+            const handleRequestDelete = (prompt) => { setPromptToDelete(prompt); };
+            const handleConfirmDelete = async () => { if (!promptToDelete) return; try { await deleteDoc(doc(db, 'prompts', promptToDelete.id)); } catch (error) { alert("Failed to delete prompt."); } finally { setPromptToDelete(null); } };
+            const handleCancelDelete = () => { setPromptToDelete(null); };
+            const handleAdminAddPrompt = async (newPrompt) => { if (!user) return; try { await addDoc(collection(db, 'prompts'), { ...newPrompt, rating: 0, approved: true, author: user.email || 'Admin', authorId: user.uid, createdAt: serverTimestamp() }); alert('Prompt added!'); setScreen('dashboard'); } catch (error) { alert('Failed to add prompt.'); } };
+            const handleLogout = () => setIsLogoutModalOpen(true); const handleConfirmLogout = async () => { await signOut(auth); setIsLogoutModalOpen(false); };
+            const renderScreen = () => {
+                switch (screen) {
+                    case 'dashboard': return React.createElement(DashboardScreen, { prompts, setScreen });
+                    case 'approved': return React.createElement(ApprovedScreen, { prompts, onDelete: handleRequestDelete });
+                    case 'analytics': return React.createElement(AnalyticsScreen, { prompts });
+                    case 'add': return React.createElement(AddPromptAdminScreen, { onAddPrompt: handleAdminAddPrompt, t });
+                    default: return React.createElement(DashboardScreen, { prompts, setScreen });
+                }
+            };
+            return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-red-50 to-pink-100" },
+                React.createElement(ConfirmationModal, { prompt: promptToDelete, onConfirm: handleConfirmDelete, onCancel: handleCancelDelete }),
+                isLogoutModalOpen && React.createElement(AdminLogoutConfirmationModal, { onConfirm: handleConfirmLogout, onCancel: () => setIsLogoutModalOpen(false) }),
+                React.createElement('div', { className: "bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg sticky top-0 z-50" },
+                    React.createElement('div', { className: "max-w-6xl mx-auto px-4 py-4 flex justify-between items-center" },
+                        React.createElement('h1', { className: "text-2xl font-bold" }, `🔐 ${t.admin}`),
+                        React.createElement('div', { className: "flex gap-2 items-center" },
+                            screen !== 'dashboard' && React.createElement('button', { onClick: () => setScreen('dashboard'), className: "px-3 py-1 bg-white/20 text-white rounded-md font-bold text-sm hover:bg-white/30 transition" }, "Dashboard"),
+                            React.createElement('select', { value: lang, onChange: (e) => setLang(e.target.value), className: "px-2 py-1 rounded text-gray-800 font-bold bg-white/90" }, React.createElement('option', { value: "en" }, "EN"), React.createElement('option', { value: "hi" }, "HI")),
+                            React.createElement('button', { onClick: handleLogout, className: "px-3 py-1 bg-red-700 text-white rounded-md font-bold text-sm hover:bg-red-800 transition" }, "Logout")
+                        )
+                    )
+                ),
+                React.createElement('main', null, renderScreen())
+            );
+        };
+        
+        // From: App.tsx (Main App component)
+        const App = () => {
+          const [user, setUser] = useState(null);
+          const [authLoading, setAuthLoading] = useState(true);
+          const [isAdmin, setIsAdmin] = useState(false);
+          const [lang, setLang] = useState('en');
+          const t = TRANSLATIONS[lang];
+
+          useEffect(() => {
+            const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+              setUser(currentUser);
+              if (currentUser) {
+                setIsAdmin(ADMIN_UIDS.includes(currentUser.uid));
+              } else {
+                setIsAdmin(false);
+              }
+              setAuthLoading(false);
+            });
+            return () => unsubscribe();
+          }, []);
+
+          if (authLoading) {
+            return React.createElement('div', { className: "min-h-screen flex items-center justify-center bg-gray-100" }, "Authenticating...");
+          }
+
+          if (!user) {
+            return React.createElement(UserLoginScreen, null);
+          }
+
+          if (isAdmin) {
+            return React.createElement(AdminApp, { lang, setLang, t });
+          } else {
+            return React.createElement(UserApp, { lang, setLang, t });
+          }
+        };
+
+        // From: index.tsx (Mounting logic)
+        const rootElement = document.getElementById('root');
+        if (!rootElement) {
+          throw new Error("Could not find root element to mount to");
+        }
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(React.createElement(React.StrictMode, null, React.createElement(App)));
+    </script>
+</body>
+</html>
