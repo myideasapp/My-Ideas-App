@@ -78,14 +78,6 @@ export const TRANSLATIONS: Translations = {
     ask_anything_dev: 'Ask about app development...',
     thinking: 'Thinking...',
     welcome_assistant: 'Hello! How can I help you with app development today?',
-    github_guide: 'GitHub Guide',
-    github_desc: 'How to upload this project',
-    github_instr_title: 'Upload to GitHub',
-    github_step1: '1. Create a new repository on GitHub.com',
-    github_step2: '2. Download these project files to your computer folder',
-    github_step3: '3. Open terminal in that folder and run:',
-    github_step4: '4. Refresh GitHub to see your code!',
-    github_close: 'Close',
   },
   hi: {
     home: 'होम',
@@ -161,14 +153,6 @@ export const TRANSLATIONS: Translations = {
     ask_anything_dev: 'ऐप डेवलपमेंट के बारे में पूछें...',
     thinking: 'सोच रहा है...',
     welcome_assistant: 'नमस्ते! मैं आज ऐप डेवलपमेंट में आपकी कैसे मदद कर सकता हूँ?',
-    github_guide: 'GitHub गाइड',
-    github_desc: 'इस प्रोजेक्ट को अपलोड करना सीखें',
-    github_instr_title: 'GitHub पर अपलोड करें',
-    github_step1: '1. GitHub.com पर एक नई रिपॉजिटरी बनाएं',
-    github_step2: '2. अपने प्रोजेक्ट फ़ाइलों को अपने कंप्यूटर पर डाउनलोड करें',
-    github_step3: '3. प्रोजेक्ट फ़ोल्डर में टर्मिनल खोलें और चलाएं:',
-    github_step4: '4. अपना कोड देखने के लिए GitHub रिफ्रेश करें!',
-    github_close: 'बंद करें',
   }
 };
 

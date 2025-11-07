@@ -1,6 +1,20 @@
-
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, serverTimestamp, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, query, orderBy, getDocs, where } from 'firebase/firestore';
+import { 
+  collection, 
+  onSnapshot, 
+  addDoc, 
+  serverTimestamp, 
+  doc, 
+  getDoc, 
+  setDoc, 
+  updateDoc, 
+  arrayUnion, 
+  arrayRemove, 
+  query, 
+  orderBy, 
+  getDocs, 
+  where 
+} from 'firebase/firestore';
 import { User, onAuthStateChanged, signOut, updateProfile } from 'firebase/auth';
 import { Star, X } from 'lucide-react';
 import { db, auth } from '../../services/firebase';

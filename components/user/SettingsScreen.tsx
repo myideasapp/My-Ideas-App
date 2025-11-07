@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { User } from 'firebase/auth';
-import { ChevronRight, Github, X, Copy, Check } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import type { Language, UserScreen } from '../../types';
 
 interface SettingsScreenProps {
@@ -14,12 +14,6 @@ interface SettingsScreenProps {
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, handleLogout, lang, setLang, setScreen, t }) => {
-  const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
-
-  const toggleGitHubModal = () => {
-    setIsGitHubModalOpen(!isGitHubModalOpen);
-  };
-
   return (
     <div>
       <div className="bg-white shadow-md p-4">
@@ -40,6 +34,28 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, handleLogout, lan
             <ChevronRight size={20} className="text-gray-400" />
           </button>
           
-          <button onClick={toggleGitHubModal} className="w-full text-left bg-gray-50 hover:bg-gray-100 p-4 rounded-lg flex justify-between items-center transition">
-            <div className="flex items-center gap-3">
-              <div className="bg-gray-800 text-white p-2 rounded-full">
+          <div>
+            <label className="font-bold text-gray-700">{t.language}</label>
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as Language)}
+              className="w-full px-4 py-2 border rounded-lg mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिंदी</option>
+            </select>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition"
+          >
+            {t.logout}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SettingsScreen;

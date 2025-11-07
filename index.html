@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,16 +13,16 @@
     <script type="importmap">
 {
   "imports": {
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.546.0",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.25.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.379.0",
+    "@google/genai": "https://esm.sh/@google/genai@0.1.1",
     "react": "https://esm.sh/react@18.2.0",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
+    "recharts": "https://esm.sh/recharts@2.12.7",
     "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
     "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
     "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
   }
 }
@@ -30,6 +31,16 @@
 <body class="bg-gray-100">
     <div id="root"></div>
     <script type="module">
+        // --- महत्वपूर्ण सेटिंग (CRITICAL SETUP) ---
+        window.process = {
+          env: {
+            // नीचे "यहाँ_अपनी_असली_API_KEY_डालें" को हटाकर अपनी Google AI Studio से मिली API Key पेस्ट करें।
+            // Replace "यहाँ_अपनी_असली_API_KEY_डालें" with your actual API Key from Google AI Studio.
+            API_KEY: "AIzaSyC1cdzeqNbLLbmiByWHOc7shP7iUnxHTeA"
+          }
+        };
+        // --- सेटिंग समाप्त ---
+
         import React, { useState, useEffect, useRef, useCallback } from 'react';
         import ReactDOM from 'react-dom/client';
         import { GoogleGenAI, Type, Modality } from "@google/genai";
@@ -213,7 +224,11 @@
 
         // From: services/geminiService.ts
         const generatePrompt = async (category) => {
-          const ai = new GoogleGenAI({ apiKey: window.process.env.API_KEY });
+          const apiKey = window.process?.env?.API_KEY;
+          if (!apiKey || apiKey === 'यहाँ_अपनी_असली_API_KEY_डालें') {
+            throw new Error("कृपया कोड में अपनी Gemini API Key डालें। (Please set your Gemini API Key in the code first.)");
+          }
+          const ai = new GoogleGenAI({ apiKey });
           try {
             const response = await ai.models.generateContent({
               model: "gemini-2.5-flash",
@@ -236,7 +251,7 @@
             return { title: generatedData.title, desc: generatedData.desc, text: generatedData.text };
           } catch (error) {
             console.error("Error generating prompt with Gemini:", error);
-            throw new Error("Failed to generate prompt. Please try again.");
+            throw new Error("Failed to generate prompt. Please check your API key.");
           }
         };
 
@@ -797,14 +812,25 @@
             const [outputAudioContext, setOutputAudioContext] = useState(null);
             const messagesEndRef = useRef(null);
             const currentAudioSource = useRef(null);
+            
             useEffect(() => {
-                const ai = new GoogleGenAI({ apiKey: window.process.env.API_KEY });
-                const newChat = ai.chats.create({ model: 'gemini-2.5-flash', config: { systemInstruction: "You are an expert AI assistant specializing in application development. Your goal is to provide clear, concise, and helpful answers to questions about how to build applications. Keep your responses short and to the point. Answer in the same language as the user's question." } });
-                setChat(newChat);
-                setMessages([{ role: 'model', text: t.welcome_assistant }]);
-                const outCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-                setOutputAudioContext(outCtx);
-                return () => { if (currentAudioSource.current) { currentAudioSource.current.stop(); } outCtx.close(); };
+                const apiKey = window.process?.env?.API_KEY;
+                if (!apiKey || apiKey === 'यहाँ_अपनी_असली_API_KEY_डालें') {
+                    setMessages([{ role: 'model', text: 'Error: Missing API Key. Please check the code.' }]);
+                    return;
+                }
+                try {
+                  const ai = new GoogleGenAI({ apiKey });
+                  const newChat = ai.chats.create({ model: 'gemini-2.5-flash', config: { systemInstruction: "You are an expert AI assistant specializing in application development. Your goal is to provide clear, concise, and helpful answers to questions about how to build applications. Keep your responses short and to the point. Answer in the same language as the user's question." } });
+                  setChat(newChat);
+                  setMessages([{ role: 'model', text: t.welcome_assistant }]);
+                  const outCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                  setOutputAudioContext(outCtx);
+                } catch (err) {
+                  console.error("Init error:", err);
+                  setMessages([{ role: 'model', text: 'Initialization error. Check console.' }]);
+                }
+                return () => { if (currentAudioSource.current) { currentAudioSource.current.stop(); } if (outputAudioContext) { outputAudioContext.close(); } };
             }, [t.welcome_assistant]);
             const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
             useEffect(scrollToBottom, [messages, loading]);
@@ -822,7 +848,7 @@
                         modelResponse += chunk.text;
                         setMessages(prev => { const newMessages = [...prev]; newMessages[newMessages.length - 1].text = modelResponse; return newMessages; });
                     }
-                } catch (error) { console.error("Error:", error); setMessages(prev => [...prev, { role: 'model', text: 'Sorry, something went wrong.' }]); } 
+                } catch (error) { console.error("Error:", error); setMessages(prev => [...prev, { role: 'model', text: 'Sorry, something went wrong. Please check your API Key.' }]); } 
                 finally { setLoading(false); }
             };
             const handleCopy = (text, index) => { navigator.clipboard.writeText(text); setCopiedIndex(index); setTimeout(() => setCopiedIndex(null), 2000); };
@@ -833,7 +859,8 @@
                 if (outputAudioContext.state === 'suspended') { outputAudioContext.resume(); }
                 setIsSpeechLoading(index); setSpeakingIndex(null);
                 try {
-                    const ai = new GoogleGenAI({ apiKey: window.process.env.API_KEY });
+                    const apiKey = window.process?.env?.API_KEY;
+                    const ai = new GoogleGenAI({ apiKey });
                     const response = await ai.models.generateContent({ model: "gemini-2.5-flash-preview-tts", contents: [{ parts: [{ text }] }], config: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } } } });
                     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
                     if (base64Audio) {
@@ -844,7 +871,7 @@
                         source.onended = () => { setSpeakingIndex(null); currentAudioSource.current = null; };
                         source.start(); currentAudioSource.current = source; setSpeakingIndex(index);
                     }
-                } catch (err) { console.error("Speech Error:", err); alert("Could not generate audio."); } 
+                } catch (err) { console.error("Speech Error:", err); alert("Could not generate audio. Check API Key."); } 
                 finally { setIsSpeechLoading(null); }
             };
             const handleLike = (index) => setLikedMessages(prev => { const newSet = new Set(prev); if (newSet.has(index)) { newSet.delete(index); } else { newSet.add(index); } return newSet; });
@@ -924,6 +951,12 @@
                 sourcesRef.current.forEach(source => source.stop()); sourcesRef.current.clear(); setStatus('ended'); setScreen('assistant');
             }, [setScreen]);
             useEffect(() => {
+                const apiKey = window.process?.env?.API_KEY;
+                if (!apiKey || apiKey === 'यहाँ_अपनी_असली_API_KEY_डालें') {
+                   alert('कृपया कोड में अपनी Gemini API Key डालें। (Please set your Gemini API Key in the code first.)');
+                   setStatus('error');
+                   return;
+                }
                 const outCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
                 outputAudioContextRef.current = outCtx;
                 const startSession = async () => {
@@ -932,7 +965,7 @@
                         inputStreamRef.current = stream;
                         const inputCtx = new(window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
                         inputAudioContextRef.current = inputCtx;
-                        const ai = new GoogleGenAI({ apiKey: window.process.env.API_KEY });
+                        const ai = new GoogleGenAI({ apiKey });
                         sessionPromiseRef.current = ai.live.connect({ model: 'gemini-2.5-flash-native-audio-preview-09-2025', callbacks: {
                             onopen: () => {
                                 setStatus('listening'); const source = inputCtx.createMediaStreamSource(stream); const processor = inputCtx.createScriptProcessor(4096, 1, 1);
@@ -954,7 +987,7 @@
                             onerror: (e) => { console.error('Session error:', e); setStatus('error'); },
                             onclose: (e) => { if (status !== 'ended') { setStatus('ended'); } },
                         }, config: { responseModalities: [Modality.AUDIO], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } }, systemInstruction: "You are a professional, friendly, and empathetic AI assistant. Your expertise is in application development. When a user speaks to you, respond in a natural, conversational manner, just like a human. Infuse your responses with a warm and helpful tone. Provide clear and concise answers, but feel free to engage in a friendly, human-like conversation. Always answer in the same language as the user's question." } });
-                    } catch (error) { console.error('Error starting recording:', error); setStatus('error'); alert('Could not start recording. Please ensure you have given microphone permissions.'); }
+                    } catch (error) { console.error('Error starting recording:', error); setStatus('error'); alert('Could not start recording. Please ensure you have given microphone permissions and set the API key.'); }
                 };
                 startSession();
                 return () => { handleEndSession(); if (outputAudioContextRef.current) { outputAudioContextRef.current.close(); } };

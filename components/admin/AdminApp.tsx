@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { collection, onSnapshot, doc, deleteDoc, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { 
+  collection, 
+  onSnapshot, 
+  doc, 
+  deleteDoc, 
+  query, 
+  orderBy, 
+  addDoc, 
+  serverTimestamp 
+} from 'firebase/firestore';
 import { auth, db } from '../../services/firebase';
 import { ADMIN_UIDS, CATEGORIES } from '../../constants';
 import { Sparkles, X } from 'lucide-react';
