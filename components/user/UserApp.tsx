@@ -1,23 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  onSnapshot, 
-  addDoc, 
-  serverTimestamp, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  arrayUnion, 
-  arrayRemove, 
-  query, 
-  orderBy, 
-  getDocs, 
-  where 
-} from 'firebase/firestore';
-import { User, onAuthStateChanged, signOut, updateProfile } from 'firebase/auth';
+import { User } from 'firebase/auth';
 import { Star, X } from 'lucide-react';
 import { db, auth } from '../../services/firebase';
+import firebase from 'firebase/app';
+import 'firebase/firestore';
 import HomeScreen from './HomeScreen';
 import FavoritesScreen from './FavoritesScreen';
 import AddPromptScreen from './AddPromptScreen';
@@ -52,10 +38,10 @@ const RatingModal: React.FC<RatingModalProps> = ({ prompt, onClose, onRatePrompt
         return;
       }
       try {
-        const ratingDocRef = doc(db, 'prompts', prompt.id, 'ratings', currentUser.uid);
-        const docSnap = await getDoc(ratingDocRef);
-        if (docSnap.exists()) {
-          setUserRating(docSnap.data().rating);
+        const ratingDocRef = db.collection('prompts').doc(prompt.id).collection('ratings').doc(currentUser.uid);
+        const docSnap = await ratingDocRef.get();
+        if (docSnap.exists) {
+          setUserRating(docSnap.data()?.rating);
         }
       } catch (error) {
         console.error("Error fetching user rating:", error);
@@ -189,7 +175,7 @@ const UserApp: React.FC<UserAppProps> = ({ lang, setLang, t }) => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
     });
@@ -197,8 +183,8 @@ const UserApp: React.FC<UserAppProps> = ({ lang, setLang, t }) => {
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, 'prompts'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const q = db.collection('prompts').orderBy('createdAt', 'desc');
+    const unsubscribe = q.onSnapshot((querySnapshot) => {
       const promptsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -214,18 +200,18 @@ const UserApp: React.FC<UserAppProps> = ({ lang, setLang, t }) => {
 
   useEffect(() => {
     if (user) {
-      const userDocRef = doc(db, 'users', user.uid);
-      const unsubFavorites = onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setFavorites(docSnap.data().favorites || []);
+      const userDocRef = db.collection('users').doc(user.uid);
+      const unsubFavorites = userDocRef.onSnapshot((docSnap) => {
+        if (docSnap.exists) {
+          setFavorites(docSnap.data()?.favorites || []);
         } else {
-          setDoc(userDocRef, { email: user.email, favorites: [] });
+          userDocRef.set({ email: user.email, favorites: [] });
           setFavorites([]);
         }
       });
 
-      const myPromptsQuery = query(collection(db, 'prompts'), where('authorId', '==', user.uid));
-      const unsubMyPrompts = onSnapshot(myPromptsQuery, (querySnapshot) => {
+      const myPromptsQuery = db.collection('prompts').where('authorId', '==', user.uid);
+      const unsubMyPrompts = myPromptsQuery.onSnapshot((querySnapshot) => {
         const userPromptsData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -253,13 +239,17 @@ const UserApp: React.FC<UserAppProps> = ({ lang, setLang, t }) => {
 
   const handleToggleFavorite = async (promptId: string) => {
     if (!user) return;
-    const userDocRef = doc(db, 'users', user.uid);
+    const userDocRef = db.collection('users').doc(user.uid);
     const isCurrentlyFavorite = favorites.includes(promptId);
 
     setFavorites(prevFavorites => isCurrentlyFavorite ? prevFavorites.filter(id => id !== promptId) : [...prevFavorites, promptId]);
 
     try {
-      await updateDoc(userDocRef, { favorites: isCurrentlyFavorite ? arrayRemove(promptId) : arrayUnion(promptId) });
+      await userDocRef.update({ 
+        favorites: isCurrentlyFavorite 
+          ? firebase.firestore.FieldValue.arrayRemove(promptId) 
+          : firebase.firestore.FieldValue.arrayUnion(promptId) 
+      });
     } catch (error) {
       console.error("Error updating favorites:", error);
       setFavorites(prevFavorites => isCurrentlyFavorite ? [...prevFavorites, promptId] : prevFavorites.filter(id => id !== promptId));
@@ -273,13 +263,13 @@ const UserApp: React.FC<UserAppProps> = ({ lang, setLang, t }) => {
       return;
     }
     try {
-      await addDoc(collection(db, 'prompts'), {
+      await db.collection('prompts').add({
         ...newPrompt,
         rating: 0,
         approved: true, // Automatically approved
         author: user.displayName || user.email || 'Anonymous',
         authorId: user.uid,
-        createdAt: serverTimestamp(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
       alert('Prompt submitted successfully!');
       setScreen('myPrompts');
@@ -290,9 +280,9 @@ const UserApp: React.FC<UserAppProps> = ({ lang, setLang, t }) => {
   };
   
   const handleUpdatePrompt = async (promptId: string, updatedData: Omit<Prompt, 'id' | 'rating' | 'approved' | 'author' | 'authorId'>) => {
-    const promptRef = doc(db, 'prompts', promptId);
+    const promptRef = db.collection('prompts').doc(promptId);
     try {
-      await updateDoc(promptRef, {
+      await promptRef.update({
         ...updatedData,
         approved: true, 
       });
@@ -310,17 +300,17 @@ const UserApp: React.FC<UserAppProps> = ({ lang, setLang, t }) => {
       return;
     }
     
-    const ratingDocRef = doc(db, 'prompts', promptId, 'ratings', user.uid);
-    const promptDocRef = doc(db, 'prompts', promptId);
+    const ratingDocRef = db.collection('prompts').doc(promptId).collection('ratings').doc(user.uid);
+    const promptDocRef = db.collection('prompts').doc(promptId);
 
     try {
-      await setDoc(ratingDocRef, { rating: newRating });
-      const ratingsCollectionRef = collection(db, 'prompts', promptId, 'ratings');
-      const ratingsSnapshot = await getDocs(ratingsCollectionRef);
+      await ratingDocRef.set({ rating: newRating });
+      const ratingsCollectionRef = db.collection('prompts').doc(promptId).collection('ratings');
+      const ratingsSnapshot = await ratingsCollectionRef.get();
       const ratings = ratingsSnapshot.docs.map(doc => doc.data().rating as number);
       if (ratings.length > 0) {
         const averageRating = ratings.reduce((acc, r) => acc + r, 0) / ratings.length;
-        await updateDoc(promptDocRef, { rating: parseFloat(averageRating.toFixed(1)) });
+        await promptDocRef.update({ rating: parseFloat(averageRating.toFixed(1)) });
       }
     } catch (error) {
       console.error("Error rating prompt:", error);
@@ -334,7 +324,7 @@ const UserApp: React.FC<UserAppProps> = ({ lang, setLang, t }) => {
         return;
     }
     try {
-        await updateProfile(auth.currentUser, { displayName });
+        await auth.currentUser.updateProfile({ displayName });
         setUser({ ...auth.currentUser });
         alert("Profile updated successfully!");
         setIsEditProfileModalOpen(false);
@@ -349,7 +339,7 @@ const UserApp: React.FC<UserAppProps> = ({ lang, setLang, t }) => {
   };
   
   const handleConfirmLogout = async () => {
-    await signOut(auth);
+    await auth.signOut();
     setIsLogoutModalOpen(false);
   };
 
@@ -392,43 +382,4 @@ const UserApp: React.FC<UserAppProps> = ({ lang, setLang, t }) => {
         return <AddPromptScreen onAddPrompt={handleAddPrompt} t={t} />;
       case 'assistant':
         return <AssistantScreen t={t} setScreen={setScreen} />;
-      case 'myPrompts':
-        return <MyPromptsScreen myPrompts={myPrompts} t={t} setScreen={setScreen} />;
-      case 'settings':
-        return <SettingsScreen user={user} handleLogout={handleLogout} lang={lang} setLang={setLang} setScreen={setScreen} t={t} />;
-      case 'profile':
-        return <UserProfileScreen 
-                  user={user} 
-                  myPromptsCount={myPrompts.length}
-                  favoritesCount={favorites.length}
-                  setScreen={setScreen}
-                  onEditProfileClick={handleOpenEditProfileModal}
-                  t={t} 
-                />;
-      case 'live-assistant':
-        return <LiveAssistantScreen setScreen={setScreen} t={t} />;
-      default:
-        return <HomeScreen prompts={prompts} setScreen={setScreen} favorites={favorites} onToggleFavorite={handleToggleFavorite} onRateClick={handleOpenRatingModal} t={t} />;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-sans">
-        {ratingModalPrompt && <RatingModal prompt={ratingModalPrompt} onClose={handleCloseRatingModal} onRatePrompt={handleRatePrompt} />}
-        {isEditProfileModalOpen && user && <EditProfileModal user={user} onClose={() => setIsEditProfileModalOpen(false)} onUpdateProfile={handleUpdateProfile} />}
-        {isLogoutModalOpen && <LogoutConfirmationModal onConfirm={handleConfirmLogout} onCancel={() => setIsLogoutModalOpen(false)} />}
-
-        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm shadow-md">
-            <div className="max-w-6xl mx-auto px-4 py-3">
-                <h1 className="text-2xl font-bold text-blue-600">💡 Ideas</h1>
-            </div>
-        </div>
-        <main className="pb-24">
-            {loading ? <div className="text-center py-20">Loading prompts...</div> : renderScreen()}
-        </main>
-        <BottomNav screen={screen} setScreen={setScreen} t={t} />
-    </div>
-  );
-};
-
-export default UserApp;
+      case '
